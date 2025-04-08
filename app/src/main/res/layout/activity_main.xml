@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#c994ff"
+    android:padding="16dp">
+
+    <com.example.itiger.TetrisView
+        android:id="@+id/tetrisView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="150dp"
+        android:background="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.9" />
+
+    <!-- Кнопки управления -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tetrisView"
+        app:layout_constraintTop_toBottomOf="@+id/btnNewTetromino">
+
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnUp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:visibility="gone"
+                android:background="@drawable/move_button"
+                android:onClick="moveUp"
+                android:text="↑"
+                android:textSize="32sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnDown"
+                android:visibility="gone"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="50dp"
+                android:background="@drawable/move_button"
+                android:onClick="moveDown"
+                android:text="↓"
+                android:textSize="32sp" />
+        </LinearLayout>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnLeft"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:visibility="gone"
+            android:background="@drawable/move_button"
+            android:onClick="moveLeft"
+            android:text="←"
+            android:textSize="32sp"
+            app:layout_constraintBottom_toBottomOf="@+id/linearLayout"
+            app:layout_constraintEnd_toStartOf="@+id/linearLayout"
+            app:layout_constraintTop_toTopOf="@+id/linearLayout" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnRight"
+            android:layout_width="50dp"
+            android:visibility="gone"
+            android:layout_height="50dp"
+            android:background="@drawable/move_button"
+            android:onClick="moveRight"
+            android:text="→"
+            android:textSize="32sp"
+            app:layout_constraintBottom_toBottomOf="@+id/linearLayout"
+            app:layout_constraintStart_toEndOf="@+id/linearLayout"
+            app:layout_constraintTop_toTopOf="@+id/linearLayout" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/btnRotate"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:visibility="gone"
+        android:background="@drawable/move_button"
+        android:onClick="rotateTetromino"
+        android:padding="10dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/baseline_360_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/tetrisView"
+        app:layout_constraintTop_toBottomOf="@+id/btnNewTetromino" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnNewTetromino"
+        android:layout_width="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_height="60dp"
+        android:background="@drawable/move_button"
+        android:gravity="center"
+        android:onClick="createNewTetromino"
+        android:text="+"
+        android:textSize="30sp"
+        app:cornerRadius="30dp"
+        app:layout_constraintEnd_toEndOf="@+id/linearLayout2"
+        app:layout_constraintStart_toStartOf="@+id/linearLayout2"
+        app:layout_constraintTop_toBottomOf="@+id/tetrisView" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginVertical="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/tetrisView"
+        app:layout_constraintEnd_toEndOf="@+id/tetrisView"
+        app:layout_constraintStart_toStartOf="@+id/tetrisView">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:background="@drawable/move_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:text="День"
+            android:textAllCaps="false"
+            android:layout_weight="1" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:background="@drawable/move_button"
+            android:layout_width="0dp"
+            android:layout_marginHorizontal="10dp"
+            android:layout_height="match_parent"
+            android:text="Неделя"
+            android:textAllCaps="false"
+            android:layout_weight="1" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:text="Месяц"
+            android:background="@drawable/move_button"
+            android:textAllCaps="false"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
