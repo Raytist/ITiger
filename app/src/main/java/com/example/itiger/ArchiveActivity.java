@@ -11,54 +11,104 @@ import android.widget.ListView;
 import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
 public class ArchiveActivity extends AppCompatActivity {
 
     private ListView listView;
-    private ArrayList<MainActivity.Tetromino> completedTetrominos;
-    @SuppressWarnings("FieldCanBeLocal")
+    private ArrayList<MainActivity.TetrominoWithDate> archivedTetrominos;
     private TetrominoAdapter adapter;
+    private SharedPreferences prefs;
+    private static final String PREFS_NAME = "TetrisPrefs";
+    private static final int ARCHIVE_REQUEST_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_archive);
 
-        // Получаем данные из Intent
-        Object serializableExtra = getIntent().getSerializableExtra("completedTetrominos");
-        if (serializableExtra instanceof ArrayList) {
-            completedTetrominos = (ArrayList<MainActivity.Tetromino>) serializableExtra;
-        } else {
-            completedTetrominos = new ArrayList<>();
-        }
-
-        // Инициализируем ListView
         listView = findViewById(R.id.listViewArchive);
+        archivedTetrominos = new ArrayList<>();
+        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
-        // Создаём адаптер
+        loadArchivedTetrominos();
+
         adapter = new TetrominoAdapter();
         listView.setAdapter(adapter);
 
-        // Добавляем обработчик нажатий на элементы списка
         listView.setOnItemClickListener((parent, view, position, id) -> {
-            // Показываем диалог подтверждения удаления
             showDeleteConfirmationDialog(position);
         });
     }
 
-    // Метод для показа диалога подтверждения удаления
+    private void loadArchivedTetrominos() {
+        Set<String> datesWithData = prefs.getStringSet("DatesWithData", new HashSet<>());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+
+        for (String date : datesWithData) {
+            String datePrefix = date + "_";
+            int completedTetrominoCount = prefs.getInt(datePrefix + "CompletedTetrominoCount", 0);
+            for (int i = 0; i < completedTetrominoCount; i++) {
+                int position = prefs.getInt(datePrefix + "CompletedTetrominoPosition_" + i, 0);
+                int typeIndex = prefs.getInt(datePrefix + "CompletedTetrominoType_" + i, 0);
+                int rotation = prefs.getInt(datePrefix + "CompletedTetrominoRotation_" + i, 0);
+                int color = prefs.getInt(datePrefix + "CompletedTetrominoColor_" + i, ContextCompat.getColor(this, android.R.color.holo_blue_light));
+                String title = prefs.getString(datePrefix + "CompletedTetrominoTitle_" + i, "");
+                String description = prefs.getString(datePrefix + "CompletedTetrominoDescription_" + i, "");
+                String category = prefs.getString(datePrefix + "CompletedTetrominoCategory_" + i, "");
+                int difficulty = prefs.getInt(datePrefix + "CompletedTetrominoDifficulty_" + i, 1);
+                int timeToComplete = prefs.getInt(datePrefix + "CompletedTetrominoTime_" + i, 0);
+
+                int[] shape = generateShapeFromTimeAndDifficulty(timeToComplete, difficulty, rotation);
+                MainActivity.Tetromino tetromino = new MainActivity.Tetromino(position, shape, color, typeIndex, rotation,
+                        title, description, category, difficulty, timeToComplete);
+                archivedTetrominos.add(new MainActivity.TetrominoWithDate(tetromino, date));
+            }
+        }
+    }
+
+    private int[] generateShapeFromTimeAndDifficulty(int timeInSeconds, int difficulty, int rotation) {
+        final int SECONDS_PER_COLUMN = 2 * 60 * 60;
+        int columns = (int) Math.ceil((double) timeInSeconds / SECONDS_PER_COLUMN);
+        columns = Math.min(columns, 8); // WIDTH из MainActivity
+        int rows = Math.min(difficulty, 8); // HEIGHT из MainActivity
+
+        if (rotation % 2 == 1) {
+            int temp = rows;
+            rows = columns;
+            columns = temp;
+        }
+
+        rows = Math.min(rows, 8);
+        columns = Math.min(columns, 8);
+
+        if (rows == 0) rows = 1;
+        if (columns == 0) columns = 1;
+
+        int[] shape = new int[rows * columns];
+        int index = 0;
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < columns; col++) {
+                shape[index++] = row * 8 + col; // WIDTH = 8
+            }
+        }
+        return shape;
+    }
+
     private void showDeleteConfirmationDialog(final int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Удалить элемент");
         builder.setMessage("Вы уверены, что хотите удалить этот элемент из архива?");
         builder.setPositiveButton("Да", (dialog, which) -> {
-            // Удаляем элемент из списка
-            completedTetrominos.remove(position);
-            // Обновляем адаптер
+            archivedTetrominos.remove(position);
             adapter.notifyDataSetChanged();
-            // Сохраняем изменения в SharedPreferences
-            saveCompletedTetrominos();
+            saveUpdatedArchive();
             dialog.dismiss();
         });
         builder.setNegativeButton("Нет", (dialog, which) -> dialog.dismiss());
@@ -66,53 +116,69 @@ public class ArchiveActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Метод для сохранения завершённых тетромино в SharedPreferences
-    private void saveCompletedTetrominos() {
-        // Используем те же ключи, что в MainActivity
-        SharedPreferences prefs = getSharedPreferences("TetrisPrefs", MODE_PRIVATE);
+    private void saveUpdatedArchive() {
         SharedPreferences.Editor editor = prefs.edit();
+        Set<String> datesWithData = new HashSet<>(prefs.getStringSet("DatesWithData", new HashSet<>()));
+        Set<String> modifiedDates = new HashSet<>(prefs.getStringSet("ModifiedDates", new HashSet<>()));
 
-        // Сохраняем количество завершённых тетромино
-        editor.putInt("CompletedTetrominoCount", completedTetrominos.size());
-
-        // Сохраняем данные каждого завершённого тетромино
-        for (int i = 0; i < completedTetrominos.size(); i++) {
-            MainActivity.Tetromino tetromino = completedTetrominos.get(i);
-            editor.putInt("CompletedTetrominoPosition_" + i, tetromino.position);
-            editor.putInt("CompletedTetrominoType_" + i, tetromino.typeIndex);
-            editor.putInt("CompletedTetrominoRotation_" + i, tetromino.rotation);
-            editor.putInt("CompletedTetrominoColor_" + i, tetromino.originalColor);
-            editor.putString("CompletedTetrominoTitle_" + i, tetromino.title);
-            editor.putString("CompletedTetrominoDescription_" + i, tetromino.description);
-            editor.putString("CompletedTetrominoCategory_" + i, tetromino.category);
-            editor.putInt("CompletedTetrominoDifficulty_" + i, tetromino.difficulty);
-            editor.putInt("CompletedTetrominoTime_" + i, tetromino.timeToComplete);
+        // Очищаем все завершённые тетромино из SharedPreferences
+        for (String date : datesWithData) {
+            String datePrefix = date + "_";
+            editor.putInt(datePrefix + "CompletedTetrominoCount", 0);
         }
+
+        // Перезаписываем только оставшиеся завершённые тетромино
+        for (MainActivity.TetrominoWithDate item : archivedTetrominos) {
+            String datePrefix = item.date + "_";
+            int count = prefs.getInt(datePrefix + "CompletedTetrominoCount", 0);
+            editor.putInt(datePrefix + "CompletedTetrominoPosition_" + count, item.tetromino.position);
+            editor.putInt(datePrefix + "CompletedTetrominoType_" + count, item.tetromino.typeIndex);
+            editor.putInt(datePrefix + "CompletedTetrominoRotation_" + count, item.tetromino.rotation);
+            editor.putInt(datePrefix + "CompletedTetrominoColor_" + count, item.tetromino.originalColor);
+            editor.putString(datePrefix + "CompletedTetrominoTitle_" + count, item.tetromino.title);
+            editor.putString(datePrefix + "CompletedTetrominoDescription_" + count, item.tetromino.description);
+            editor.putString(datePrefix + "CompletedTetrominoCategory_" + count, item.tetromino.category);
+            editor.putInt(datePrefix + "CompletedTetrominoDifficulty_" + count, item.tetromino.difficulty); // Исправленная строка
+            editor.putInt(datePrefix + "CompletedTetrominoTime_" + count, item.tetromino.timeToComplete);
+            editor.putInt(datePrefix + "CompletedTetrominoCount", count + 1);
+            modifiedDates.add(item.date);
+        }
+
+        // Обновляем DatesWithData
+        Set<String> updatedDatesWithData = new HashSet<>();
+        for (MainActivity.TetrominoWithDate item : archivedTetrominos) {
+            updatedDatesWithData.add(item.date);
+        }
+        for (String date : datesWithData) {
+            String datePrefix = date + "_";
+            if (prefs.getInt(datePrefix + "TetrominoCount", 0) > 0) {
+                updatedDatesWithData.add(date);
+            }
+        }
+        editor.putStringSet("DatesWithData", updatedDatesWithData);
+        editor.putStringSet("ModifiedDates", modifiedDates);
 
         editor.apply();
     }
 
-    // Переопределяем onBackPressed для возврата результата
     @Override
     public void onBackPressed() {
-        // Возвращаем обновлённый список completedTetrominos
         Intent resultIntent = new Intent();
-        resultIntent.putExtra("updatedCompletedTetrominos", completedTetrominos);
+        resultIntent.putExtra("updatedCompletedTetrominos", archivedTetrominos);
         setResult(RESULT_OK, resultIntent);
         super.onBackPressed();
     }
 
-    // Пользовательский адаптер для ListView
     private class TetrominoAdapter extends BaseAdapter {
 
         @Override
         public int getCount() {
-            return completedTetrominos != null ? completedTetrominos.size() : 0;
+            return archivedTetrominos != null ? archivedTetrominos.size() : 0;
         }
 
         @Override
         public Object getItem(int position) {
-            return completedTetrominos.get(position);
+            return archivedTetrominos.get(position);
         }
 
         @Override
@@ -127,17 +193,16 @@ public class ArchiveActivity extends AppCompatActivity {
                         .inflate(R.layout.item_tetromino, parent, false);
             }
 
-            MainActivity.Tetromino tetromino = completedTetrominos.get(position);
+            MainActivity.TetrominoWithDate item = archivedTetrominos.get(position);
+            MainActivity.Tetromino tetromino = item.tetromino;
 
-            // Инициализируем элементы
             TextView textTitle = convertView.findViewById(R.id.text_title);
             TextView textDescription = convertView.findViewById(R.id.text_description);
             TextView textCategory = convertView.findViewById(R.id.text_category);
             TextView textDifficulty = convertView.findViewById(R.id.text_difficulty);
             TextView textTime = convertView.findViewById(R.id.text_time);
 
-            // Заполняем данными
-            textTitle.setText(tetromino.title);
+            textTitle.setText(tetromino.title + " (" + item.date + ")");
             textDescription.setText(tetromino.description);
             textCategory.setText("Категория: " + tetromino.category);
             textDifficulty.setText("Сложность: " + tetromino.difficulty);

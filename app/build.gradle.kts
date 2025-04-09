@@ -32,7 +32,8 @@ android {
 }
 
 dependencies {
-    implementation("com.prolificinteractive:material-calendarview:2.0.0")
+    // Используем Applandeo Material Calendar View вместо предыдущих библиотек
+    implementation("com.applandeo:material-calendar-view:1.9.0") // Последняя версия на момент 2025-04-09
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

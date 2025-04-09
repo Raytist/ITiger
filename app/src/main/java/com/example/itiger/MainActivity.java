@@ -46,6 +46,7 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity {
 
     private TetrisView tetrisView;
+    private static final String KEY_MODIFIED_DATES = "ModifiedDates";
     private ArrayList<Tetromino> tetrominos = new ArrayList<>();
     private ArrayList<Tetromino> completedTetrominos = new ArrayList<>();
     private Tetromino currentTetromino;
@@ -54,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFalling = true;
     private final Handler fallHandler = new Handler(Looper.getMainLooper());
     private final long FALL_INTERVAL = 500;
-    private String selectedDate; // Добавляем поле для выбранной даты
+    private String selectedDate;
     private static final String PREFS_NAME = "TetrisPrefs";
     private AppCompatImageButton buttonRotate;
     private AppCompatButton buttonUp;
@@ -132,7 +133,8 @@ public class MainActivity extends AppCompatActivity {
     private int SELECTED_COLOR;
     private boolean isTipShownInLifecycle = false;
 
-    private final String[] timeManagementTips = {"Определяйте приоритеты – используйте матрицу Эйзенхауэра (важное/срочное).",
+    private final String[] timeManagementTips = {
+            "Определяйте приоритеты – используйте матрицу Эйзенхауэра (важное/срочное).",
             "Ставьте четкие цели – по SMART (конкретные, измеримые, достижимые, релевантные, ограниченные по времени).",
             "Планируйте заранее – вечером составляйте список дел на следующий день.",
             "Разделяйте большие задачи на мелкие подзадачи.",
@@ -203,30 +205,24 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Создаём канал уведомлений
         createNotificationChannel();
+
+        // Получаем выбранную дату из Intent
         Intent intent = getIntent();
         selectedDate = intent.getStringExtra("selectedDate");
         if (selectedDate == null) {
-            // Если дата не передана, используем текущую
             selectedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
         }
 
-        restoreGameState();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
-            }
+        // Инициализируем UI-компоненты
+        tetrisView = findViewById(R.id.tetrisView);
+        if (tetrisView == null) {
+            Log.e("MainActivity", "TetrisView not found in layout");
+            Toast.makeText(this, "Ошибка: TetrisView не найден", Toast.LENGTH_LONG).show();
+            return;
         }
-        isTipShownInLifecycle = false;
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-            Log.d("MainActivity", "Notification permission not granted");
-        }
-        SELECTED_COLOR = ContextCompat.getColor(this, android.R.color.holo_orange_dark);
-
-        createNotificationChannel();
 
         buttonRotate = findViewById(R.id.btnRotate);
         buttonUp = findViewById(R.id.btnUp);
@@ -235,11 +231,19 @@ public class MainActivity extends AppCompatActivity {
         buttonRight = findViewById(R.id.btnRight);
         buttonViewInfo = findViewById(R.id.btnInfo);
 
-        updateControlButtonsVisibility();
+        // Проверяем разрешения на уведомления
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
+            }
+        }
 
-        tetrisView = findViewById(R.id.tetrisView);
-        tetrisView.setTetrominos(tetrominos);
-        tetrisView.setCurrentTetromino(currentTetromino);
+        isTipShownInLifecycle = false;
+        SELECTED_COLOR = ContextCompat.getColor(this, android.R.color.holo_orange_dark);
+
+        // Устанавливаем слушатель для TetrisView
         tetrisView.setOnTetrominoSelectedListener(tetromino -> {
             if (currentTetromino == tetromino) {
                 currentTetromino.color = currentTetromino.originalColor;
@@ -258,12 +262,15 @@ public class MainActivity extends AppCompatActivity {
             tetrisView.invalidate();
         });
 
+        // Восстанавливаем состояние игры
         restoreGameState();
 
+        // Создаём новое тетромино, если список пуст
         if (tetrominos.isEmpty()) {
             createNewTetromino(null);
         }
 
+        // Запускаем падение тетромино
         fallHandler.post(fallRunnable);
     }
 
@@ -315,7 +322,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void openArchive(View view) {
         Intent intent = new Intent(this, ArchiveActivity.class);
-        intent.putExtra("completedTetrominos", completedTetrominos);
         startActivityForResult(intent, ARCHIVE_REQUEST_CODE);
     }
 
@@ -326,9 +332,29 @@ public class MainActivity extends AppCompatActivity {
             if (data != null) {
                 Object serializableExtra = data.getSerializableExtra("updatedCompletedTetrominos");
                 if (serializableExtra instanceof ArrayList) {
-                    completedTetrominos = (ArrayList<Tetromino>) serializableExtra;
+                    ArrayList<TetrominoWithDate> updatedList = (ArrayList<TetrominoWithDate>) serializableExtra;
+                    completedTetrominos.clear();
+                    for (TetrominoWithDate item : updatedList) {
+                        if (item.date.equals(selectedDate)) {
+                            completedTetrominos.add(item.tetromino);
+                        }
+                    }
+                    saveGameState();
+                    if (tetrisView != null) {
+                        tetrisView.setTetrominos(tetrominos);
+                        tetrisView.invalidate();
+                    }
                 }
             }
+        }
+    }
+    static class TetrominoWithDate implements java.io.Serializable {
+        Tetromino tetromino;
+        String date;
+
+        TetrominoWithDate(Tetromino tetromino, String date) {
+            this.tetromino = tetromino;
+            this.date = date;
         }
     }
 
@@ -365,7 +391,6 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
-        // Сохраняем данные для конкретной даты
         String datePrefix = selectedDate + "_";
         editor.putInt(datePrefix + KEY_TETROMINO_COUNT, tetrominos.size());
 
@@ -402,14 +427,24 @@ public class MainActivity extends AppCompatActivity {
             editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_TIME + i, tetromino.timeToComplete);
         }
 
-        // Обновляем список дат с данными
         Set<String> datesWithData = new HashSet<>(prefs.getStringSet("DatesWithData", new HashSet<>()));
+        Set<String> modifiedDates = new HashSet<>(prefs.getStringSet(KEY_MODIFIED_DATES, new HashSet<>()));
+
+        // Проверяем, были ли изменения в текущих или завершённых тетромино
+        int prevTetrominoCount = prefs.getInt(datePrefix + KEY_TETROMINO_COUNT, 0);
+        int prevCompletedCount = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_COUNT, 0);
+        if (prevTetrominoCount != tetrominos.size() || prevCompletedCount != completedTetrominos.size()) {
+            modifiedDates.add(selectedDate);
+        }
+
         if (!tetrominos.isEmpty() || !completedTetrominos.isEmpty()) {
             datesWithData.add(selectedDate);
         } else {
             datesWithData.remove(selectedDate);
+            modifiedDates.remove(selectedDate);
         }
         editor.putStringSet("DatesWithData", datesWithData);
+        editor.putStringSet(KEY_MODIFIED_DATES, modifiedDates);
 
         editor.apply();
     }
@@ -464,15 +499,16 @@ public class MainActivity extends AppCompatActivity {
             completedTetrominos.add(tetromino);
         }
 
-        if (tetrominos.isEmpty()) {
-            createNewTetromino(null);
+        if (tetrisView != null) {
+            tetrisView.setTetrominos(tetrominos);
+            tetrisView.setCurrentTetromino(currentTetromino);
+            updateControlButtonsVisibility();
+            tetrisView.invalidate();
+        } else {
+            Log.e("MainActivity", "TetrisView is null in restoreGameState");
         }
-
-        tetrisView.setTetrominos(tetrominos);
-        tetrisView.setCurrentTetromino(currentTetromino);
-        updateControlButtonsVisibility();
-        tetrisView.invalidate();
     }
+
     static class Tetromino implements java.io.Serializable {
         int position;
         int[] shape;
@@ -659,12 +695,13 @@ public class MainActivity extends AppCompatActivity {
             }
             currentTetromino = null;
             isFalling = true;
-            tetrisView.setTetrominos(tetrominos);
-            tetrisView.setCurrentTetromino(currentTetromino);
-            updateControlButtonsVisibility();
-            tetrisView.invalidate();
+            if (tetrisView != null) {
+                tetrisView.setTetrominos(tetrominos);
+                tetrisView.setCurrentTetromino(currentTetromino);
+                updateControlButtonsVisibility();
+                tetrisView.invalidate();
+            }
 
-            // Проверка заполненного столбца после добавления
             if (tetrisView.checkFullColumn()) {
                 showTimeManagementTip();
             }
@@ -893,10 +930,12 @@ public class MainActivity extends AppCompatActivity {
             currentTetromino = null;
             isFalling = true;
             isPomodoroRunning = false;
-            tetrisView.setTetrominos(tetrominos);
-            tetrisView.setCurrentTetromino(currentTetromino);
-            updateControlButtonsVisibility();
-            tetrisView.invalidate();
+            if (tetrisView != null) {
+                tetrisView.setTetrominos(tetrominos);
+                tetrisView.setCurrentTetromino(currentTetromino);
+                updateControlButtonsVisibility();
+                tetrisView.invalidate();
+            }
             dialog.dismiss();
         });
 
@@ -908,10 +947,12 @@ public class MainActivity extends AppCompatActivity {
             currentTetromino = null;
             isFalling = true;
             isPomodoroRunning = false;
-            tetrisView.setTetrominos(tetrominos);
-            tetrisView.setCurrentTetromino(currentTetromino);
-            updateControlButtonsVisibility();
-            tetrisView.invalidate();
+            if (tetrisView != null) {
+                tetrisView.setTetrominos(tetrominos);
+                tetrisView.setCurrentTetromino(currentTetromino);
+                updateControlButtonsVisibility();
+                tetrisView.invalidate();
+            }
             dialog.dismiss();
         });
 
@@ -986,7 +1027,6 @@ public class MainActivity extends AppCompatActivity {
         for (int posIndex : newShape) {
             int pos = newPosition + posIndex;
             int row = pos / WIDTH;
-            int col = pos % WIDTH;
             minNewRow = Math.min(minNewRow, row);
             maxNewRow = Math.max(maxNewRow, row);
         }
@@ -1017,9 +1057,10 @@ public class MainActivity extends AppCompatActivity {
         currentTetromino.position = newPosition;
 
         Log.d("MainActivity", "Поворот успешен: newRotation=" + newRotation + ", newPosition=" + newPosition);
-        tetrisView.invalidate();
+        if (tetrisView != null) {
+            tetrisView.invalidate();
+        }
 
-        // Проверка заполненного столбца после поворота
         if (tetrisView.checkFullColumn()) {
             showTimeManagementTip();
         }
@@ -1074,10 +1115,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         currentTetromino.position = newPosition;
-        tetrisView.invalidate();
+        if (tetrisView != null) {
+            tetrisView.invalidate();
+        }
         Log.d("MainActivity", "Движение влево: newPosition=" + newPosition);
 
-        // Проверка заполненного столбца после движения
         if (tetrisView.checkFullColumn()) {
             showTimeManagementTip();
         }
@@ -1106,10 +1148,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         currentTetromino.position = newPosition;
-        tetrisView.invalidate();
+        if (tetrisView != null) {
+            tetrisView.invalidate();
+        }
         Log.d("MainActivity", "Движение вправо: newPosition=" + newPosition);
 
-        // Проверка заполненного столбца после движения
         if (tetrisView.checkFullColumn()) {
             showTimeManagementTip();
         }
@@ -1131,10 +1174,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         currentTetromino.position = newPosition;
-        tetrisView.invalidate();
+        if (tetrisView != null) {
+            tetrisView.invalidate();
+        }
         Log.d("MainActivity", "Движение вверх: newPosition=" + newPosition);
 
-        // Проверка заполненного столбца после движения
         if (tetrisView.checkFullColumn()) {
             showTimeManagementTip();
         }
@@ -1156,10 +1200,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         currentTetromino.position = newPosition;
-        tetrisView.invalidate();
+        if (tetrisView != null) {
+            tetrisView.invalidate();
+        }
         Log.d("MainActivity", "Движение вниз: newPosition=" + newPosition);
 
-        // Проверка заполненного столбца после движения
         if (tetrisView.checkFullColumn()) {
             showTimeManagementTip();
         }
@@ -1180,10 +1225,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         tetromino.position = newPosition;
-        tetrisView.invalidate();
+        if (tetrisView != null) {
+            tetrisView.invalidate();
+        }
         Log.d("MainActivity", "Тетромино упало: newPosition=" + newPosition);
 
-        // Проверка заполненного столбца после падения
         if (tetrisView.checkFullColumn()) {
             showTimeManagementTip();
         }
@@ -1252,9 +1298,7 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    // Обновленный метод для показа совета через Dialog
     private void showTimeManagementTip() {
-        // Проверяем, был ли уже показан совет в текущем жизненном цикле
         if (isTipShownInLifecycle) {
             Log.d("MainActivity", "Совет уже показан в этом жизненном цикле, пропускаем");
             return;
@@ -1272,7 +1316,6 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        // Устанавливаем флаг после показа совета
         isTipShownInLifecycle = true;
         Log.d("MainActivity", "Совет показан, флаг установлен: " + isTipShownInLifecycle);
     }
