@@ -645,19 +645,25 @@ public class MainActivity extends AppCompatActivity {
         final long[] workDurationForTimer = new long[1];
         final int[] workCyclesCompleted = new int[1];
         final long totalTime = currentTetromino.timeToComplete * 1000L;
+        final long[] remainingWorkTime = new long[1];
 
-        // Параметр ускорения времени (должен совпадать с PomodoroService)
+        // Параметр ускорения времени
         final int TIME_ACCELERATION_FACTOR = 10;
         final long UPDATE_INTERVAL = 1000 / TIME_ACCELERATION_FACTOR;
 
-        if (totalWorkTime < DEFAULT_WORK_DURATION) {
+        if (totalWorkTime <= DEFAULT_WORK_DURATION) {
             totalCycles[0] = 1;
             workDurationForTimer[0] = totalWorkTime;
+            remainingWorkTime[0] = 0;
         } else {
-            long cycleDuration = DEFAULT_WORK_DURATION + DEFAULT_BREAK_DURATION;
-            totalCycles[0] = (int) (totalWorkTime / cycleDuration);
-            if (totalWorkTime % cycleDuration > 0) {
+            long fullCycleDuration = DEFAULT_WORK_DURATION + DEFAULT_BREAK_DURATION;
+            totalCycles[0] = (int) (totalWorkTime / fullCycleDuration);
+            long remainingTimeAfterFullCycles = totalWorkTime % fullCycleDuration;
+            if (remainingTimeAfterFullCycles > 0) {
+                remainingWorkTime[0] = remainingTimeAfterFullCycles;
                 totalCycles[0]++;
+            } else {
+                remainingWorkTime[0] = 0;
             }
             workDurationForTimer[0] = DEFAULT_WORK_DURATION;
         }
@@ -728,8 +734,10 @@ public class MainActivity extends AppCompatActivity {
             if (!isPomodoroRunning) {
                 Intent serviceIntent = new Intent(this, PomodoroService.class);
                 serviceIntent.putExtra("tetromino", currentTetromino);
-                timeLeftInMillis = workDurationForTimer[0];
-                isWorkPeriod = true;
+                if (timeLeftInMillis == workDurationForTimer[0] || timeLeftInMillis <= 0) {
+                    timeLeftInMillis = workDurationForTimer[0];
+                    isWorkPeriod = true;
+                }
                 serviceIntent.putExtra("timeLeft", timeLeftInMillis);
                 serviceIntent.putExtra("isWorkPeriod", isWorkPeriod);
                 startForegroundService(serviceIntent);
@@ -742,14 +750,25 @@ public class MainActivity extends AppCompatActivity {
                 int seconds = (int) (timeLeftInMillis / 1000) % 60;
                 pomodoroTimer.setText(String.format("%02d:%02d", minutes, seconds));
             } else if (isServiceBound && pomodoroService != null) {
-                timeLeftInMillis = pomodoroService.getTimeLeftInMillis();
-                isWorkPeriod = pomodoroService.isWorkPeriod();
-                pomodoroService.pauseTimer();
-                isPomodoroRunning = false;
-                pomodoroStatus.setText(isWorkPeriod ? "Работа (остановлено)" : "Отдых (остановлено)");
-                btnStartPause.setText("Продолжить");
-                btnReset.setEnabled(true);
-                updatePomodoroTimerText(pomodoroTimer);
+                if (isPomodoroRunning) {
+                    // Пауза
+                    timeLeftInMillis = pomodoroService.getTimeLeftInMillis();
+                    isWorkPeriod = pomodoroService.isWorkPeriod();
+                    pomodoroService.pauseTimer();
+                    isPomodoroRunning = false;
+                    pomodoroStatus.setText(isWorkPeriod ? "Работа (остановлено)" : "Отдых (остановлено)");
+                    btnStartPause.setText("Продолжить");
+                    btnReset.setEnabled(true);
+                    updatePomodoroTimerText(pomodoroTimer);
+                } else {
+                    // Продолжить
+                    pomodoroService.resumeTimer(timeLeftInMillis, isWorkPeriod);
+                    isPomodoroRunning = true;
+                    pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
+                    btnStartPause.setText("Пауза");
+                    btnReset.setEnabled(true);
+                    updatePomodoroTimerText(pomodoroTimer);
+                }
             }
         });
 

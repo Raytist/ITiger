@@ -25,6 +25,7 @@ public class PomodoroService extends Service {
     private int workCyclesCompleted = 0;
     private int totalCycles;
     private long totalWorkTime;
+    private long remainingWorkTime;
     private static final long DEFAULT_WORK_DURATION = 25 * 60 * 1000L;
     private static final long DEFAULT_BREAK_DURATION = 5 * 60 * 1000L;
     private static final String CHANNEL_ID = "PomodoroChannel";
@@ -33,9 +34,9 @@ public class PomodoroService extends Service {
     private MediaPlayer mediaPlayer;
 
     // Параметр ускорения времени (для тестирования)
-    private static final int TIME_ACCELERATION_FACTOR = 1; // Ускорение в 10 раз
-    private static final long UPDATE_INTERVAL = 1000 / TIME_ACCELERATION_FACTOR; // Интервал обновления (например, 100 мс)
-    private static final long TIME_DECREMENT = 1000; // Уменьшение времени на 1 секунду за интервал
+    private static final int TIME_ACCELERATION_FACTOR = 10;
+    private static final long UPDATE_INTERVAL = 1000 / TIME_ACCELERATION_FACTOR;
+    private static final long TIME_DECREMENT = 1000;
 
     private final Runnable timerRunnable = new Runnable() {
         @Override
@@ -47,29 +48,27 @@ public class PomodoroService extends Service {
             } else if (isRunning && timeLeftInMillis <= 0) {
                 if (isWorkPeriod) {
                     workCyclesCompleted++;
-                    long elapsedWorkTime = workCyclesCompleted * workDuration;
-                    if (breakDuration > 0 && elapsedWorkTime < totalWorkTime) {
+                    if (workCyclesCompleted == totalCycles) {
+                        sendPeriodEndNotification("Задача завершена!", R.raw.finish);
+                        isRunning = false;
+                        stopForeground(true);
+                        stopSelf();
+                    } else if (breakDuration > 0) {
                         sendPeriodEndNotification("Работа завершена! Время отдыха.", R.raw.relaxing);
                         isWorkPeriod = false;
                         timeLeftInMillis = breakDuration;
                         handler.postDelayed(this, UPDATE_INTERVAL);
-                    } else {
-                        sendPeriodEndNotification("Задача завершена!", R.raw.finish);
-                        isRunning = false;
-                        stopForeground(true);
-                        stopSelf();
                     }
                 } else {
-                    if (workCyclesCompleted < totalCycles && (workCyclesCompleted * workDuration) < totalWorkTime) {
+                    if (workCyclesCompleted < totalCycles) {
                         sendPeriodEndNotification("Отдых завершён! Время работы.", R.raw.work);
                         isWorkPeriod = true;
-                        timeLeftInMillis = workDuration;
+                        if (workCyclesCompleted == totalCycles - 1 && remainingWorkTime > 0) {
+                            timeLeftInMillis = remainingWorkTime;
+                        } else {
+                            timeLeftInMillis = DEFAULT_WORK_DURATION;
+                        }
                         handler.postDelayed(this, UPDATE_INTERVAL);
-                    } else {
-                        sendPeriodEndNotification("Задача завершена!", R.raw.finish);
-                        isRunning = false;
-                        stopForeground(true);
-                        stopSelf();
                     }
                 }
             }
@@ -93,17 +92,22 @@ public class PomodoroService extends Service {
             tetromino = (MainActivity.Tetromino) intent.getSerializableExtra("tetromino");
             if (tetromino != null) {
                 totalWorkTime = tetromino.timeToComplete * 1000L;
-                if (totalWorkTime < DEFAULT_WORK_DURATION) {
+                if (totalWorkTime <= DEFAULT_WORK_DURATION) {
+                    totalCycles = 1;
                     workDuration = totalWorkTime;
                     breakDuration = 0;
-                    totalCycles = 1;
+                    remainingWorkTime = 0;
                 } else {
                     workDuration = DEFAULT_WORK_DURATION;
                     breakDuration = DEFAULT_BREAK_DURATION;
-                    long cycleDuration = workDuration + breakDuration;
-                    totalCycles = (int) (totalWorkTime / cycleDuration);
-                    if (totalWorkTime % cycleDuration > 0) {
+                    long fullCycleDuration = DEFAULT_WORK_DURATION + DEFAULT_BREAK_DURATION;
+                    totalCycles = (int) (totalWorkTime / fullCycleDuration);
+                    long remainingTimeAfterFullCycles = totalWorkTime % fullCycleDuration;
+                    if (remainingTimeAfterFullCycles > 0) {
+                        remainingWorkTime = remainingTimeAfterFullCycles;
                         totalCycles++;
+                    } else {
+                        remainingWorkTime = 0;
                     }
                 }
                 timeLeftInMillis = intent.getLongExtra("timeLeft", workDuration);
