@@ -1,3 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ITiger</string>
+    <string name="app_name">ТетрисТайм</string>
+    <string name="create">Создать</string>
+    <string name="cancel">Отмена</string>
+    <string name="delete">Удалить</string>
+    <string name="complete">Завершить</string>
+    <string name="ok">ОК</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="archive">Архив</string>
+    <string name="please_fill_all_fields">Пожалуйста, заполните все поля</string>
+    <string name="difficulty_range">Сложность должна быть от 1 до 8</string>
+    <string name="invalid_difficulty">Некорректное значение сложности</string>
+    <string name="time_must_be_positive">Время (в минутах) должно быть больше 0</string>
+    <string name="invalid_time">Некорректное значение времени (должно быть в минутах)</string>
+    <string name="cannot_place_tetromino">Невозможно разместить тетромино: позиция занята</string>
+    <string name="no_tetromino_selected">Тетромино не выбрано</string>
+    <string name="delete_item_title">Удалить элемент</string>
+    <string name="delete_item_message">Вы уверены, что хотите удалить этот элемент из архива?</string>
+    <string name="category_label">Категория: %1$s</string>
+    <string name="difficulty_label">Сложность: %1$d</string>
+    <string name="time_label">Время: %1$d минут</string>
 </resources>

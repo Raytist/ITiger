@@ -1,5 +1,6 @@
 package com.example.itiger;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -8,32 +9,47 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-
 import androidx.annotation.Nullable;
-
 import java.util.ArrayList;
 
 public class TetrisView extends View {
 
-    private final int WIDTH = 8; // Ширина поля
-    private final int HEIGHT = 8; // Высота поля
-    private float cellSize; // Размер ячейки в пикселях
-    private final Paint paint = new Paint();
     private ArrayList<MainActivity.Tetromino> tetrominos;
     private MainActivity.Tetromino currentTetromino;
     private OnTetrominoSelectedListener listener;
+    private final int GRID_WIDTH = 8;
+    private final int GRID_HEIGHT = 8;
+    private float cellSize;
+    private Paint cellPaint;
+    private Paint gridPaint;
+
+    public TetrisView(Context context) {
+        super(context);
+        init();
+    }
 
     public TetrisView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        setFocusable(true);
+        init();
+    }
+
+    @SuppressLint("ResourceAsColor")
+    private void init() {
+        cellPaint = new Paint();
+        gridPaint = new Paint();
+        gridPaint.setColor(R.color.ic_launcher_background);
+        gridPaint.setStyle(Paint.Style.STROKE);
+        gridPaint.setStrokeWidth(2f);
     }
 
     public void setTetrominos(ArrayList<MainActivity.Tetromino> tetrominos) {
         this.tetrominos = tetrominos;
+        invalidate();
     }
 
     public void setCurrentTetromino(MainActivity.Tetromino currentTetromino) {
         this.currentTetromino = currentTetromino;
+        invalidate();
     }
 
     public void setOnTetrominoSelectedListener(OnTetrominoSelectedListener listener) {
@@ -41,65 +57,39 @@ public class TetrisView extends View {
     }
 
     @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        int width = getMeasuredWidth();
-        int height = getMeasuredHeight();
-        int size = Math.min(width, height); // Делаем поле квадратным
-        setMeasuredDimension(size, size);
-
-        // Рассчитываем размер ячейки
-        cellSize = (float) size / WIDTH;
-        Log.d("TetrisView", "Field size: " + size + "x" + size + ", cellSize: " + cellSize);
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        cellSize = Math.min(w / (float) GRID_WIDTH, h / (float) GRID_HEIGHT);
+        Log.d("TetrisView", "Размер ячейки изменён: " + cellSize);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // Фон уже установлен в XML как белый (@color/white), поэтому не переопределяем его здесь
-
-        // Рисуем сетку (для наглядности, более тёмный цвет на белом фоне)
-        paint.setColor(Color.DKGRAY); // Тёмно-серый для контраста
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(2);
-        for (int i = 0; i <= WIDTH; i++) {
+        // Рисуем сетку
+        for (int i = 0; i <= GRID_WIDTH; i++) {
             float x = i * cellSize;
-            canvas.drawLine(x, 0, x, getHeight(), paint);
+            canvas.drawLine(x, 0, x, GRID_HEIGHT * cellSize, gridPaint);
         }
-        for (int i = 0; i <= HEIGHT; i++) {
+        for (int i = 0; i <= GRID_HEIGHT; i++) {
             float y = i * cellSize;
-            canvas.drawLine(0, y, getWidth(), y, paint);
+            canvas.drawLine(0, y, GRID_WIDTH * cellSize, y, gridPaint);
         }
 
-        // Рисуем все тетромино с небольшим отступом (padding) внутри ячеек
+        // Рисуем тетромино
         if (tetrominos != null) {
             for (MainActivity.Tetromino tetromino : tetrominos) {
-                paint.setStyle(Paint.Style.FILL);
-                paint.setColor(tetromino.color);
+                cellPaint.setColor(tetromino.color);
                 for (int index : tetromino.shape) {
                     int pos = tetromino.position + index;
-                    if (pos < 0 || pos >= WIDTH * HEIGHT) {
-                        Log.d("TetrisView", "Cannot draw tetromino: position out of bounds at pos=" + pos);
-                        continue; // Пропускаем отрисовку, если позиция вне поля
-                    }
-                    int row = pos / WIDTH;
-                    int col = pos % WIDTH;
-                    if (row >= 0 && row < HEIGHT && col >= 0 && col < WIDTH) {
-                        float padding = 2; // Небольшой отступ внутри ячейки
-                        float left = col * cellSize + padding;
-                        float top = row * cellSize + padding;
-                        float right = (col + 1) * cellSize - padding;
-                        float bottom = (row + 1) * cellSize - padding;
-                        canvas.drawRect(left, top, right, bottom, paint);
-                    } else {
-                        Log.d("TetrisView", "Cannot draw tetromino: out of bounds at row=" + row + ", col=" + col);
-                    }
+                    int row = pos / GRID_WIDTH;
+                    int col = pos % GRID_WIDTH;
+                    float left = col * cellSize;
+                    float top = row * cellSize;
+                    canvas.drawRect(left, top, left + cellSize, top + cellSize, cellPaint);
                 }
             }
-            Log.d("TetrisView", "Drawing " + tetrominos.size() + " tetrominos");
-        } else {
-            Log.d("TetrisView", "No tetrominos to draw");
         }
     }
 
@@ -108,24 +98,26 @@ public class TetrisView extends View {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             float x = event.getX();
             float y = event.getY();
+
             int col = (int) (x / cellSize);
             int row = (int) (y / cellSize);
-            if (row >= 0 && row < HEIGHT && col >= 0 && col < WIDTH) {
-                int clickedPosition = row * WIDTH + col;
+            int position = row * GRID_WIDTH + col;
+
+            // Проверяем, попал ли клик в один из тетромино
+            if (tetrominos != null) {
                 for (MainActivity.Tetromino tetromino : tetrominos) {
                     for (int index : tetromino.shape) {
-                        int tetrominoPos = tetromino.position + index;
-                        if (tetrominoPos == clickedPosition) {
+                        if (tetromino.position + index == position) {
                             if (listener != null) {
                                 listener.onTetrominoSelected(tetromino);
+                                Log.d("TetrisView", "Клик по тетромино на позиции: " + position);
                             }
                             return true;
                         }
                     }
                 }
-            } else {
-                Log.d("TetrisView", "Touch out of bounds: row=" + row + ", col=" + col);
             }
+            Log.d("TetrisView", "Клик вне тетромино на позиции: " + position);
         }
         return super.onTouchEvent(event);
     }
