@@ -1,5 +1,7 @@
 package com.example.itiger;
 
+import static androidx.core.app.ServiceCompat.startForeground;
+
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -141,12 +143,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        createNotificationChannel();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
             }
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.d("MainActivity", "Notification permission not granted");
         }
         SELECTED_COLOR = ContextCompat.getColor(this, android.R.color.holo_orange_dark);
 
@@ -210,15 +217,15 @@ public class MainActivity extends AppCompatActivity {
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "Pomodoro Notifications";
-            String description = "Уведомления о завершении периодов Pomodoro";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            String description = "Уведомления о ходе Pomodoro";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT; // Поддерживает звук
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
+            // Не устанавливаем setSound(null, null), чтобы звук определялся уведомлением
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
     }
-
     private void showNotification(String message) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -590,10 +597,14 @@ public class MainActivity extends AppCompatActivity {
             isPomodoroRunning = pomodoroService.isRunning();
             timeLeftInMillis = pomodoroService.getTimeLeftInMillis();
             isWorkPeriod = pomodoroService.isWorkPeriod();
+            if (!isPomodoroRunning && timeLeftInMillis <= 0 && !isWorkPeriod) {
+                // Цикл завершён
+                timeLeftInMillis = workDuration;
+                isWorkPeriod = true;
+            }
             Log.d("MainActivity", "Synced with service: running=" + isPomodoroRunning + ", timeLeft=" + timeLeftInMillis + ", isWork=" + isWorkPeriod);
         }
     }
-
     public void viewTetrominoInfo(View view) {
         if (currentTetromino == null) {
             Toast.makeText(this, "Тетромино не выбрано", Toast.LENGTH_SHORT).show();
@@ -605,6 +616,7 @@ public class MainActivity extends AppCompatActivity {
         View dialogView = inflater.inflate(R.layout.dialog_view_tetromino, null);
         builder.setView(dialogView);
 
+        // Инициализация UI элементов
         TextView textTitle = dialogView.findViewById(R.id.text_title);
         TextView textDescription = dialogView.findViewById(R.id.text_description);
         TextView textCategory = dialogView.findViewById(R.id.text_category);
@@ -612,6 +624,7 @@ public class MainActivity extends AppCompatActivity {
         TextView textTime = dialogView.findViewById(R.id.text_time);
         TextView pomodoroStatus = dialogView.findViewById(R.id.pomodoro_status);
         TextView pomodoroTimer = dialogView.findViewById(R.id.pomodoro_timer);
+        TextView pomodoroCycles = dialogView.findViewById(R.id.pomodoro_cycles);
         Button btnStartPause = dialogView.findViewById(R.id.btn_start_pause);
         Button btnReset = dialogView.findViewById(R.id.btn_reset);
 
@@ -624,38 +637,84 @@ public class MainActivity extends AppCompatActivity {
         int timeInMinutes = currentTetromino.timeToComplete / 60;
         textTime.setText("Время: " + timeInMinutes + " минут");
 
-        workDuration = currentTetromino.timeToComplete * 1000L;
-        breakDuration = (long) (workDuration * BREAK_DURATION_FACTOR);
+        // Расчёт параметров Pomodoro
+        long totalWorkTime = currentTetromino.timeToComplete * 1000L;
+        final long DEFAULT_WORK_DURATION = 25 * 60 * 1000L;
+        final long DEFAULT_BREAK_DURATION = 5 * 60 * 1000L;
+        final int[] totalCycles = new int[1];
+        final long[] workDurationForTimer = new long[1];
+        final int[] workCyclesCompleted = new int[1];
+        final long totalTime = currentTetromino.timeToComplete * 1000L;
+
+        // Параметр ускорения времени (должен совпадать с PomodoroService)
+        final int TIME_ACCELERATION_FACTOR = 10;
+        final long UPDATE_INTERVAL = 1000 / TIME_ACCELERATION_FACTOR;
+
+        if (totalWorkTime < DEFAULT_WORK_DURATION) {
+            totalCycles[0] = 1;
+            workDurationForTimer[0] = totalWorkTime;
+        } else {
+            long cycleDuration = DEFAULT_WORK_DURATION + DEFAULT_BREAK_DURATION;
+            totalCycles[0] = (int) (totalWorkTime / cycleDuration);
+            if (totalWorkTime % cycleDuration > 0) {
+                totalCycles[0]++;
+            }
+            workDurationForTimer[0] = DEFAULT_WORK_DURATION;
+        }
+
+        // Инициализация начального состояния
+        workCyclesCompleted[0] = 0;
+        if (isServiceBound && pomodoroService != null && pomodoroService.isRunning()) {
+            workCyclesCompleted[0] = pomodoroService.getWorkCyclesCompleted();
+        }
+        pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
+
+        if (!isPomodoroRunning) {
+            timeLeftInMillis = workDurationForTimer[0];
+            isWorkPeriod = true;
+            int totalMinutes = (int) (totalTime / 1000) / 60;
+            int totalSeconds = (int) (totalTime / 1000) % 60;
+            pomodoroTimer.setText(String.format("%02d:%02d", totalMinutes, totalSeconds));
+        } else {
+            int minutes = (int) (timeLeftInMillis / 1000) / 60;
+            int seconds = (int) (timeLeftInMillis / 1000) % 60;
+            pomodoroTimer.setText(String.format("%02d:%02d", minutes, seconds));
+        }
 
         final Handler timerHandler = new Handler(Looper.getMainLooper());
         final Runnable timerRunnable = new Runnable() {
             @Override
             public void run() {
                 syncWithService();
-                if (isPomodoroRunning) {
+                if (isPomodoroRunning && isServiceBound && pomodoroService != null) {
+                    workCyclesCompleted[0] = pomodoroService.getWorkCyclesCompleted();
+                    pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
                     pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
                     btnStartPause.setText("Пауза");
                     btnReset.setEnabled(true);
+                    updatePomodoroTimerText(pomodoroTimer);
                 } else {
-                    if (timeLeftInMillis <= 0) {
-                        timeLeftInMillis = workDuration;
-                        isWorkPeriod = true;
+                    if (timeLeftInMillis <= 0 || timeLeftInMillis == workDurationForTimer[0]) {
+                        pomodoroStatus.setText("Работа");
+                        btnStartPause.setText("Старт");
+                        btnReset.setEnabled(false);
+                        int totalMinutes = (int) (totalTime / 1000) / 60;
+                        int totalSeconds = (int) (totalTime / 1000) % 60;
+                        pomodoroTimer.setText(String.format("%02d:%02d", totalMinutes, totalSeconds));
+                    } else {
+                        pomodoroStatus.setText(isWorkPeriod ? "Работа (остановлено)" : "Отдых (остановлено)");
+                        btnStartPause.setText("Продолжить");
+                        btnReset.setEnabled(true);
+                        updatePomodoroTimerText(pomodoroTimer);
                     }
-                    pomodoroStatus.setText("Работа (остановлено)");
-                    btnStartPause.setText("Старт");
-                    btnReset.setEnabled(timeLeftInMillis != workDuration);
+                    pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
                 }
-                updatePomodoroTimerText(pomodoroTimer);
-                timerHandler.postDelayed(this, 1000);
+                timerHandler.postDelayed(this, UPDATE_INTERVAL);
             }
         };
 
-        // Начальная синхронизация
-        syncWithService();
         if (!isPomodoroRunning) {
-            timeLeftInMillis = workDuration;
-            isWorkPeriod = true;
-            pomodoroStatus.setText("Работа (остановлено)");
+            pomodoroStatus.setText("Работа");
             btnStartPause.setText("Старт");
             btnReset.setEnabled(false);
         } else {
@@ -663,47 +722,59 @@ public class MainActivity extends AppCompatActivity {
             btnStartPause.setText("Пауза");
             btnReset.setEnabled(true);
         }
-        updatePomodoroTimerText(pomodoroTimer);
         timerHandler.post(timerRunnable);
 
         btnStartPause.setOnClickListener(v -> {
             if (!isPomodoroRunning) {
-                Log.d("MainActivity", "Starting Pomodoro service");
                 Intent serviceIntent = new Intent(this, PomodoroService.class);
                 serviceIntent.putExtra("tetromino", currentTetromino);
+                timeLeftInMillis = workDurationForTimer[0];
+                isWorkPeriod = true;
+                serviceIntent.putExtra("timeLeft", timeLeftInMillis);
+                serviceIntent.putExtra("isWorkPeriod", isWorkPeriod);
                 startForegroundService(serviceIntent);
+                bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
                 isPomodoroRunning = true;
+                pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
                 btnStartPause.setText("Пауза");
                 btnReset.setEnabled(true);
-                pomodoroStatus.setText("Работа");
+                int minutes = (int) (timeLeftInMillis / 1000) / 60;
+                int seconds = (int) (timeLeftInMillis / 1000) % 60;
+                pomodoroTimer.setText(String.format("%02d:%02d", minutes, seconds));
             } else if (isServiceBound && pomodoroService != null) {
-                Log.d("MainActivity", "Pausing Pomodoro service");
+                timeLeftInMillis = pomodoroService.getTimeLeftInMillis();
+                isWorkPeriod = pomodoroService.isWorkPeriod();
                 pomodoroService.pauseTimer();
                 isPomodoroRunning = false;
-                btnStartPause.setText("Старт");
+                pomodoroStatus.setText(isWorkPeriod ? "Работа (остановлено)" : "Отдых (остановлено)");
+                btnStartPause.setText("Продолжить");
                 btnReset.setEnabled(true);
-                pomodoroStatus.setText("Работа (остановлено)");
+                updatePomodoroTimerText(pomodoroTimer);
             }
-            updatePomodoroTimerText(pomodoroTimer);
         });
 
         btnReset.setOnClickListener(v -> {
             if (isServiceBound && pomodoroService != null) {
-                Log.d("MainActivity", "Resetting Pomodoro");
                 pomodoroService.resetTimer();
-                cancelNotification();
-                isPomodoroRunning = false;
-                timeLeftInMillis = workDuration;
-                isWorkPeriod = true;
-                pomodoroStatus.setText("Работа (остановлено)");
-                updatePomodoroTimerText(pomodoroTimer);
-                btnStartPause.setText("Старт");
-                btnReset.setEnabled(false);
+                unbindService(serviceConnection);
+                isServiceBound = false;
             }
+            stopService(new Intent(this, PomodoroService.class));
+            cancelNotification();
+            isPomodoroRunning = false;
+            timeLeftInMillis = workDurationForTimer[0];
+            isWorkPeriod = true;
+            workCyclesCompleted[0] = 0;
+            pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
+            pomodoroStatus.setText("Работа");
+            btnStartPause.setText("Старт");
+            btnReset.setEnabled(false);
+            int totalMinutes = (int) (totalTime / 1000) / 60;
+            int totalSeconds = (int) (totalTime / 1000) % 60;
+            pomodoroTimer.setText(String.format("%02d:%02d", totalMinutes, totalSeconds));
         });
 
         builder.setNegativeButton("Удалить", (dialog, which) -> {
-            Log.d("MainActivity", "Deleting Tetromino");
             tetrominos.remove(currentTetromino);
             stopService(new Intent(this, PomodoroService.class));
             cancelNotification();
@@ -718,7 +789,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         builder.setNeutralButton("Завершить", (dialog, which) -> {
-            Log.d("MainActivity", "Completing Tetromino");
             completedTetrominos.add(currentTetromino);
             tetrominos.remove(currentTetromino);
             stopService(new Intent(this, PomodoroService.class));
@@ -742,7 +812,6 @@ public class MainActivity extends AppCompatActivity {
         dialog.setOnDismissListener(d -> timerHandler.removeCallbacks(timerRunnable));
         dialog.show();
     }
-
     private void updatePomodoroTimerText(TextView timer) {
         int minutes = (int) (timeLeftInMillis / 1000) / 60;
         int seconds = (int) (timeLeftInMillis / 1000) % 60;
@@ -755,10 +824,9 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Поворот против часовой стрелки: уменьшаем rotation (0 → 3 → 2 → 1)
+        // Поворот против часовой стрелки: 0 → 3 → 2 → 1
         int newRotation = (currentTetromino.rotation - 1 + 4) % 4;
         int[] currentShape = currentTetromino.shape;
-        int[] newShape;
 
         // Определяем текущие размеры формы
         int minRow = HEIGHT, maxRow = -1;
@@ -771,60 +839,74 @@ public class MainActivity extends AppCompatActivity {
             minCol = Math.min(minCol, col);
             maxCol = Math.max(maxCol, col);
         }
-        int currentHeight = maxRow - minRow + 1;
-        int currentWidth = maxCol - minCol + 1;
+        int height = maxRow - minRow + 1;
+        int width = maxCol - minCol + 1;
 
-        // Новая форма после поворота (меняем ширину и высоту местами для нечётных rotation)
-        int newHeight = (newRotation % 2 == 0) ? currentHeight : currentWidth;
-        int newWidth = (newRotation % 2 == 0) ? currentWidth : currentHeight;
-        newShape = new int[newHeight * newWidth];
+        // Создаём матрицу текущей формы
+        boolean[][] matrix = new boolean[height][width];
+        for (int index : currentShape) {
+            int row = (index / WIDTH) - minRow;
+            int col = (index % WIDTH) - minCol;
+            matrix[row][col] = true;
+        }
+
+        // Поворачиваем матрицу на 90° против часовой стрелки
+        int newHeight = width;  // Новая высота = старая ширина
+        int newWidth = height;  // Новая ширина = старая высота
+        boolean[][] rotatedMatrix = new boolean[newHeight][newWidth];
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                rotatedMatrix[j][height - 1 - i] = matrix[i][j];
+            }
+        }
+
+        // Преобразуем матрицу обратно в массив позиций
+        int[] newShape = new int[height * width];
         int index = 0;
-
-        Log.d("MainActivity", "Текущие размеры: width=" + currentWidth + ", height=" + currentHeight +
-                ", Новые размеры: width=" + newWidth + ", height=" + newHeight);
-
-        // Заполняем новую форму с учётом поворота против часовой стрелки
         for (int row = 0; row < newHeight; row++) {
             for (int col = 0; col < newWidth; col++) {
-                int newRow, newCol;
-                switch (newRotation) {
-                    case 0: // Исходная ориентация
-                        newRow = row;
-                        newCol = col;
-                        break;
-                    case 1: // 270° против часовой (90° по часовой)
-                        newRow = col;
-                        newCol = newHeight - 1 - row;
-                        break;
-                    case 2: // 180°
-                        newRow = newHeight - 1 - row;
-                        newCol = newWidth - 1 - col;
-                        break;
-                    case 3: // 90° против часовой (270° по часовой)
-                        newRow = newWidth - 1 - col;
-                        newCol = row;
-                        break;
-                    default:
-                        throw new IllegalStateException("Недопустимое значение rotation: " + newRotation);
+                if (rotatedMatrix[row][col]) {
+                    newShape[index++] = row * WIDTH + col;
                 }
-                newShape[index++] = newRow * WIDTH + newCol;
             }
         }
 
-        // Корректируем позицию с учётом новой формы
-        int newPosition = adjustPositionToBounds(currentTetromino.position, newShape);
+        // Корректируем позицию с учётом обёртывания только по горизонтали
+        int newPosition = currentTetromino.position;
 
-        // Проверка на столкновение
-        StringBuilder shapeLog = new StringBuilder("Новая форма: ");
+        // Проверяем, помещается ли новая форма по вертикали
+        int minNewRow = HEIGHT, maxNewRow = -1;
         for (int posIndex : newShape) {
             int pos = newPosition + posIndex;
-            shapeLog.append(pos).append(" ");
-            if (pos < 0 || pos >= WIDTH * HEIGHT || (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos))) {
-                Log.d("MainActivity", "Поворот невозможен: позиция " + pos + " занята или вне поля");
-                return; // Отмена поворота
+            int row = pos / WIDTH;
+            int col = pos % WIDTH;
+            minNewRow = Math.min(minNewRow, row);
+            maxNewRow = Math.max(maxNewRow, row);
+        }
+
+        // Если выходит за верхнюю или нижнюю границу, корректируем позицию
+        if (minNewRow < 0) {
+            newPosition += (-minNewRow) * WIDTH; // Сдвигаем вниз
+        } else if (maxNewRow >= HEIGHT) {
+            newPosition -= (maxNewRow - (HEIGHT - 1)) * WIDTH; // Сдвигаем вверх
+        }
+
+        // Применяем обёртывание по горизонтали после корректировки
+        newPosition = wrapPosition(newPosition);
+
+        // Проверка на столкновение
+        for (int posIndex : newShape) {
+            int pos = wrapPosition(newPosition + posIndex);
+            int row = pos / WIDTH;
+            if (row < 0 || row >= HEIGHT) {
+                Log.d("MainActivity", "Поворот невозможен: выходит за вертикальные границы на позиции " + pos);
+                return; // Отмена поворота, если всё ещё выходит за границы
+            }
+            if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
+                Log.d("MainActivity", "Поворот невозможен: позиция " + pos + " занята");
+                return; // Отмена поворота, если есть пересечение
             }
         }
-        Log.d("MainActivity", shapeLog.toString());
 
         // Применяем поворот
         currentTetromino.rotation = newRotation;
@@ -832,10 +914,21 @@ public class MainActivity extends AppCompatActivity {
         currentTetromino.position = newPosition;
 
         Log.d("MainActivity", "Поворот успешен: newRotation=" + newRotation + ", newPosition=" + newPosition);
+        tetrisView.invalidate(); // Перерисовываем поле
+    }
 
-        // Обновляем отображение
-        tetrisView.setCurrentTetromino(currentTetromino);
-        tetrisView.invalidate();
+    private int wrapPosition(int position) {
+        int row = position / WIDTH;
+        int col = position % WIDTH;
+
+        // Обёртывание по горизонтали
+        col = (col + WIDTH) % WIDTH; // Если col < 0 или col >= WIDTH, переносим на другую сторону
+
+        // Вертикаль остаётся без обёртывания, но ограничивается границами
+        if (row < 0) row = 0;
+        if (row >= HEIGHT) row = HEIGHT - 1;
+
+        return row * WIDTH + col;
     }
 
     private boolean isPositionOccupied(int position) {
@@ -852,42 +945,123 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    private void moveTetrominoDown(Tetromino tetromino) {
-        if (canMoveDown(tetromino)) {
-            tetromino.position += WIDTH;
-            tetrisView.invalidate();
-        }
-    }
-
-    public void moveDown(View view) {
-        if (currentTetromino == null) return;
-        moveTetrominoDown(currentTetromino);
-    }
-
-    public void moveUp(View view) {
-        if (currentTetromino == null) return;
-        if (canMoveUp(currentTetromino)) {
-            currentTetromino.position -= WIDTH;
-            tetrisView.invalidate();
-        }
-    }
-
     public void moveLeft(View view) {
         if (currentTetromino == null) return;
-        if (canMoveLeft(currentTetromino)) {
-            currentTetromino.position--;
-            currentTetromino.position = adjustPositionToBounds(currentTetromino.position, currentTetromino.shape);
-            tetrisView.invalidate();
+
+        // Разделяем текущую позицию на row и col
+        int currentRow = currentTetromino.position / WIDTH;
+        int currentCol = currentTetromino.position % WIDTH;
+
+        // Двигаемся влево только по горизонтали
+        int newCol = (currentCol - 1 + WIDTH) % WIDTH; // Обёртывание влево
+        int newPosition = currentRow * WIDTH + newCol;
+
+        // Проверка на столкновение
+        for (int index : currentTetromino.shape) {
+            int pos = newPosition + index;
+            int row = pos / WIDTH;
+            if (row < 0 || row >= HEIGHT) {
+                Log.d("MainActivity", "Нельзя двигаться влево: выходит за вертикальные границы на позиции " + pos);
+                return;
+            }
+            if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
+                Log.d("MainActivity", "Нельзя двигаться влево: позиция " + pos + " занята");
+                return;
+            }
         }
+
+        currentTetromino.position = newPosition;
+        tetrisView.invalidate();
+        Log.d("MainActivity", "Движение влево: newPosition=" + newPosition);
     }
 
     public void moveRight(View view) {
         if (currentTetromino == null) return;
-        if (canMoveRight(currentTetromino)) {
-            currentTetromino.position++;
-            currentTetromino.position = adjustPositionToBounds(currentTetromino.position, currentTetromino.shape);
-            tetrisView.invalidate();
+
+        // Разделяем текущую позицию на row и col
+        int currentRow = currentTetromino.position / WIDTH;
+        int currentCol = currentTetromino.position % WIDTH;
+
+        // Двигаемся вправо только по горизонтали
+        int newCol = (currentCol + 1) % WIDTH; // Обёртывание вправо
+        int newPosition = currentRow * WIDTH + newCol;
+
+        // Проверка на столкновение
+        for (int index : currentTetromino.shape) {
+            int pos = newPosition + index;
+            int row = pos / WIDTH;
+            if (row < 0 || row >= HEIGHT) {
+                Log.d("MainActivity", "Нельзя двигаться вправо: выходит за вертикальные границы на позиции " + pos);
+                return;
+            }
+            if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
+                Log.d("MainActivity", "Нельзя двигаться вправо: позиция " + pos + " занята");
+                return;
+            }
         }
+
+        currentTetromino.position = newPosition;
+        tetrisView.invalidate();
+        Log.d("MainActivity", "Движение вправо: newPosition=" + newPosition);
+    }
+
+    public void moveUp(View view) {
+        if (currentTetromino == null) return;
+        int newPosition = currentTetromino.position - WIDTH;
+        for (int index : currentTetromino.shape) {
+            int pos = newPosition + index; // Без wrapPosition, так как верхняя граница жёсткая
+            int row = pos / WIDTH;
+            if (row < 0) {
+                Log.d("MainActivity", "Нельзя двигаться вверх: верхняя граница");
+                return;
+            }
+            if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
+                Log.d("MainActivity", "Нельзя двигаться вверх: позиция " + pos + " занята");
+                return;
+            }
+        }
+        currentTetromino.position = newPosition;
+        tetrisView.invalidate();
+        Log.d("MainActivity", "Движение вверх: newPosition=" + newPosition);
+    }
+
+    public void moveDown(View view) {
+        if (currentTetromino == null) return;
+        int newPosition = currentTetromino.position + WIDTH;
+        for (int index : currentTetromino.shape) {
+            int pos = newPosition + index; // Без wrapPosition, так как нижняя граница жёсткая
+            int row = pos / WIDTH;
+            if (row >= HEIGHT) {
+                Log.d("MainActivity", "Нельзя двигаться вниз: нижняя граница");
+                return;
+            }
+            if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
+                Log.d("MainActivity", "Нельзя двигаться вниз: позиция " + pos + " занята");
+                return;
+            }
+        }
+        currentTetromino.position = newPosition;
+        tetrisView.invalidate();
+        Log.d("MainActivity", "Движение вниз: newPosition=" + newPosition);
+    }
+
+    private void moveTetrominoDown(Tetromino tetromino) {
+        int newPosition = tetromino.position + WIDTH;
+        for (int index : tetromino.shape) {
+            int pos = newPosition + index; // Без wrapPosition для падения
+            int row = pos / WIDTH;
+            if (row >= HEIGHT) {
+                Log.d("MainActivity", "Падение остановлено: нижняя граница");
+                return;
+            }
+            if (isPositionOccupied(pos) && !isPartOfTetromino(tetromino, pos)) {
+                Log.d("MainActivity", "Падение остановлено: позиция " + pos + " занята");
+                return;
+            }
+        }
+        tetromino.position = newPosition;
+        tetrisView.invalidate();
+        Log.d("MainActivity", "Тетромино упало: newPosition=" + newPosition);
     }
 
     private boolean canMoveUp(Tetromino tetromino) {

@@ -47,7 +47,6 @@
         android:layout_height="wrap_content"
         android:textSize="14sp"
         android:paddingBottom="8dp" />
-
     <!-- Элементы для Pomodoro -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -66,7 +65,14 @@
             android:textSize="16sp"
             android:gravity="center"
             android:paddingBottom="8dp" />
-
+        <TextView
+            android:id="@+id/pomodoro_cycles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Циклов: 0"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:paddingBottom="8dp" />
         <!-- Таймер -->
         <TextView
             android:id="@+id/pomodoro_timer"
