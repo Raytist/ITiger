@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@color/white"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -16,11 +17,12 @@
 
     <!-- Поле для ввода заголовка -->
     <EditText
-
+        android:paddingHorizontal="10dp"
         android:id="@+id/edit_title"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:hint="Цель"
+        android:background="@drawable/background_radius15"
         android:inputType="text"
         android:layout_marginBottom="8dp"/>
 
@@ -28,7 +30,9 @@
     <EditText
         android:id="@+id/edit_description"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="96dp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/background_radius15"
         android:hint="Задача"
         android:inputType="textMultiLine"
         android:lines="3"
@@ -38,14 +42,18 @@
     <Spinner
         android:id="@+id/spinner_category"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="36dp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/background_radius15"
         android:layout_marginBottom="8dp"/>
 
     <!-- Поле для ввода сложности -->
     <EditText
         android:id="@+id/edit_difficulty"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/background_radius15"
         android:hint="Сложность (1 - 8)"
         android:inputType="number"
         android:layout_marginBottom="8dp"/>
@@ -54,7 +62,9 @@
     <EditText
         android:id="@+id/edit_time"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/background_radius15"
         android:hint="Время в минутах"
         android:inputType="number"
         android:layout_marginBottom="16dp"/>

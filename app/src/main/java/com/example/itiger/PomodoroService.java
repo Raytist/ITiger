@@ -34,7 +34,7 @@ public class PomodoroService extends Service {
     private MediaPlayer mediaPlayer;
 
     // Параметр ускорения времени (для тестирования)
-    private static final int TIME_ACCELERATION_FACTOR = 10;
+    private static final int TIME_ACCELERATION_FACTOR = 1;
     private static final long UPDATE_INTERVAL = 1000 / TIME_ACCELERATION_FACTOR;
     private static final long TIME_DECREMENT = 1000;
 

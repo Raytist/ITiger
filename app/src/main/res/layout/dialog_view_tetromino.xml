@@ -14,7 +14,9 @@
     <TextView
         android:id="@+id/text_title"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/background_radius15"
         android:textSize="18sp"
         android:maxLines="3"
         android:ellipsize="end"
@@ -28,7 +30,10 @@
         android:textSize="16sp" />
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="96dp"
+        android:layout_marginBottom="5dp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/background_radius15"
         android:paddingBottom="8dp">
 
         <TextView
@@ -41,21 +46,31 @@
     <TextView
         android:id="@+id/text_category"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:paddingHorizontal="10dp"
+        android:gravity="center"
+        android:background="@drawable/background_radius15"
         android:textSize="14sp"
         android:paddingBottom="4dp" />
 
     <TextView
         android:id="@+id/text_difficulty"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:paddingHorizontal="10dp"
+        android:layout_marginVertical="5dp"
+        android:gravity="center"
+        android:background="@drawable/background_radius15"
         android:textSize="14sp"
         android:paddingBottom="4dp" />
 
     <TextView
         android:id="@+id/text_time"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:paddingHorizontal="10dp"
+        android:gravity="center"
+        android:background="@drawable/background_radius15"
         android:textSize="14sp"
         android:paddingBottom="8dp" />
     <!-- Элементы для Pomodoro -->

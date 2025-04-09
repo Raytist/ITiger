@@ -854,6 +854,7 @@ public class MainActivity extends AppCompatActivity {
         String timeFormatted = String.format("%02d:%02d", minutes, seconds);
         timer.setText(timeFormatted);
     }
+
     public void rotateTetromino(View view) {
         if (currentTetromino == null) {
             Log.d("MainActivity", "Нет выбранного тетромино для поворота");
