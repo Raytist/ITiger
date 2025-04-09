@@ -101,26 +101,17 @@
             android:layout_height="50dp"
             android:text="?"
             android:textSize="22dp"
+            android:visibility="gone"
             android:background="@drawable/move_button"
             android:onClick="viewTetrominoInfo"
             android:padding="10dp" />
 
         <androidx.appcompat.widget.AppCompatImageButton
-            android:id="@+id/btnPOMODORO"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginTop="5dp"
-            android:background="@drawable/move_button"
-            android:onClick="rotateTetromino"
-            android:padding="10dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/baseline_access_time_24" />
-
-        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/btnRotate"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_marginTop="5dp"
+            android:visibility="gone"
+            android:layout_marginTop="50dp"
             android:background="@drawable/move_button"
             android:onClick="rotateTetromino"
             android:padding="10dp"

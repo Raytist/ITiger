@@ -18,9 +18,6 @@
         android:theme="@style/Theme.ITiger"
         tools:targetApi="33">
         <activity
-            android:name=".PomodoroActivity"
-            android:exported="false" />
-        <activity
             android:name=".ArchiveActivity"
             android:exported="false" />
         <activity

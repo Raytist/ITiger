@@ -4,17 +4,28 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="16dp">
-
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Цель:"
+        android:textStyle="bold"
+        android:textSize="16sp" />
     <TextView
         android:id="@+id/text_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="18sp"
-        android:textStyle="bold"
         android:maxLines="3"
         android:ellipsize="end"
         android:paddingBottom="8dp" />
-
+    <TextView
+        android:id="@+id/description"
+        android:textStyle="bold"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Задача:"
+        android:textSize="16sp" />
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="100dp"
@@ -48,21 +59,38 @@
         android:textSize="14sp"
         android:paddingBottom="8dp" />
     <!-- Элементы для Pomodoro -->
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_toggle_pomodoro"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Режим POMODORO"
+        android:textAllCaps="false"
+        android:layout_marginTop="10dp"
+        android:paddingHorizontal="15dp"
+        android:background="@drawable/move_button"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp"/>
+
     <LinearLayout
+        android:id="@+id/pomodoro_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
         android:paddingTop="8dp"
+        android:visibility="gone"
         android:paddingBottom="8dp">
 
         <!-- Статус (Работа/Отдых) -->
+
         <TextView
             android:id="@+id/pomodoro_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Режим POMODORO"
             android:textSize="16sp"
+            android:textStyle="bold"
             android:gravity="center"
             android:paddingBottom="8dp" />
         <TextView
@@ -90,17 +118,19 @@
             android:orientation="horizontal"
             android:gravity="center">
 
-            <Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_start_pause"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@drawable/move_button"
                 android:text="Старт"
                 android:layout_marginEnd="16dp" />
 
-            <Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_reset"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@drawable/move_button"
                 android:text="Сброс" />
         </LinearLayout>
     </LinearLayout>

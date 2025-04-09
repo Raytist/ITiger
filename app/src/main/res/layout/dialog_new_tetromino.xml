@@ -16,10 +16,11 @@
 
     <!-- Поле для ввода заголовка -->
     <EditText
+
         android:id="@+id/edit_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Заголовок"
+        android:hint="Цель"
         android:inputType="text"
         android:layout_marginBottom="8dp"/>
 
@@ -28,7 +29,7 @@
         android:id="@+id/edit_description"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Текст"
+        android:hint="Задача"
         android:inputType="textMultiLine"
         android:lines="3"
         android:layout_marginBottom="8dp"/>

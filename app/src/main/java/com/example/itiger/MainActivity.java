@@ -25,6 +25,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -627,6 +628,8 @@ public class MainActivity extends AppCompatActivity {
         TextView pomodoroCycles = dialogView.findViewById(R.id.pomodoro_cycles);
         Button btnStartPause = dialogView.findViewById(R.id.btn_start_pause);
         Button btnReset = dialogView.findViewById(R.id.btn_reset);
+        Button btnTogglePomodoro = dialogView.findViewById(R.id.btn_toggle_pomodoro);
+        LinearLayout pomodoroContainer = dialogView.findViewById(R.id.pomodoro_container);
 
         textDescription.setMovementMethod(new android.text.method.ScrollingMovementMethod());
 
@@ -636,6 +639,20 @@ public class MainActivity extends AppCompatActivity {
         textDifficulty.setText("Сложность: " + currentTetromino.difficulty);
         int timeInMinutes = currentTetromino.timeToComplete / 60;
         textTime.setText("Время: " + timeInMinutes + " минут");
+
+        // Логика для кнопки показа/скрытия Pomodoro
+        final boolean[] isPomodoroVisible = {false};
+        btnTogglePomodoro.setText("Показать Pomodoro");
+        btnTogglePomodoro.setOnClickListener(v -> {
+            if (isPomodoroVisible[0]) {
+                pomodoroContainer.setVisibility(View.GONE);
+                btnTogglePomodoro.setText("Показать Pomodoro");
+            } else {
+                pomodoroContainer.setVisibility(View.VISIBLE);
+                btnTogglePomodoro.setText("Скрыть Pomodoro");
+            }
+            isPomodoroVisible[0] = !isPomodoroVisible[0];
+        });
 
         // Расчёт параметров Pomodoro
         long totalWorkTime = currentTetromino.timeToComplete * 1000L;
