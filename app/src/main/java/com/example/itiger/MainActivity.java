@@ -34,7 +34,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.app.NotificationCompat;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,7 +54,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFalling = true;
     private final Handler fallHandler = new Handler(Looper.getMainLooper());
     private final long FALL_INTERVAL = 500;
-
+    private String selectedDate; // Добавляем поле для выбранной даты
+    private static final String PREFS_NAME = "TetrisPrefs";
     private AppCompatImageButton buttonRotate;
     private AppCompatButton buttonUp;
     private AppCompatButton buttonDown;
@@ -98,8 +106,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private final int[] tetrominoTypes = {0, 1, 2, 3, 4, 5, 6};
-
-    private static final String PREFS_NAME = "TetrisPrefs";
     private static final String KEY_TETROMINO_COUNT = "TetrominoCount";
     private static final String KEY_CURRENT_TETROMINO_INDEX = "CurrentTetrominoIndex";
     private static final String KEY_TETROMINO_POSITION = "TetrominoPosition_";
@@ -124,6 +130,59 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_COMPLETED_TETROMINO_TIME = "CompletedTetrominoTime_";
 
     private int SELECTED_COLOR;
+    private boolean isTipShownInLifecycle = false;
+
+    private final String[] timeManagementTips = {"Определяйте приоритеты – используйте матрицу Эйзенхауэра (важное/срочное).",
+            "Ставьте четкие цели – по SMART (конкретные, измеримые, достижимые, релевантные, ограниченные по времени).",
+            "Планируйте заранее – вечером составляйте список дел на следующий день.",
+            "Разделяйте большие задачи на мелкие подзадачи.",
+            "Фокусируйтесь на одном деле – избегайте многозадачности.",
+            "Используйте цифровые планировщики (Google Calendar, Notion, Todoist).",
+            "Попробуйте метод «Блоков времени» – распределяйте задачи по временным отрезкам.",
+            "Ведите bullet journal – ручное планирование повышает осознанность.",
+            "Применяйте правило 1-3-5 – 1 крупная, 3 средних и 5 мелких задач в день.",
+            "Автоматизируйте рутину – настройте напоминания и шаблоны.",
+            "Начинайте с самого сложного (метод «Съешь лягушку»).",
+            "Используйте таймер (Pomodoro – 25/5 мин).",
+            "Устраняйте отвлекающие факторы – отключайте уведомления.",
+            "Договоритесь с собой – «поработаю всего 5 минут».",
+            "Вознаграждайте себя за выполнение задач.",
+            "Группируйте однотипные задачи (батчинг).",
+            "Делегируйте то, что можно не делать самому.",
+            "Говорите «нет» неважным просьбам.",
+            "Используйте «параллельное выполнение» (например, слушайте подкасты в дороге).",
+            "Анализируйте «поглотители времени» (соцсети, болтовня).",
+            "Планируйте отдых – без него эффективность падает.",
+            "Работайте в свои «пиковые часы» (утро/день/вечер).",
+            "Делайте перерывы каждые 45–90 минут.",
+            "Спите 7–9 часов – усталость снижает КПД.",
+            "Занимайтесь спортом – это повышает концентрацию.",
+            "Раз в неделю проводите ревизию задач.",
+            "Ставьте квартальные и годовые цели.",
+            "Используйте «скользящее планирование» – корректируйте планы.",
+            "Резервируйте время на непредвиденное.",
+            "Оставляйте буфер между задачами (10–15 мин).",
+            "Применяйте «Inbox Zero» – разбирайте входящие (почту, сообщения).",
+            "Читайте быстро (скорочтение) или слушайте аудиокниги.",
+            "Используйте шаблоны для повторяющихся задач.",
+            "Храните информацию системно (облако, теги).",
+            "Ограничивайте время на соцсети (например, 30 мин/день).",
+            "Визуализируйте результат – это мотивирует.",
+            "Создавайте ритуалы (утренний кофе + план на день).",
+            "Соревнуйтесь с собой – ставьте рекорды.",
+            "Публично обещайте выполнить задачу (соцобязательство).",
+            "Отслеживайте прогресс – ведите дневник успехов.",
+            "Пересматривайте планы при изменении обстоятельств.",
+            "Не вините себя за срыв дедлайнов – просто скорректируйте график.",
+            "Используйте «резервные дни» для незавершенных задач.",
+            "Практикуйте «минимальную версию» – если нет времени, сделайте хотя бы часть.",
+            "Учитесь на ошибках – анализируйте, что пошло не так.",
+            "Учитесь тайм-менеджменту – читайте книги (Глеб Архангельский, Брайан Трейси).",
+            "Осваивайте слепую печать – экономит часы.",
+            "Оптимизируйте быт (доставка еды, умный дом).",
+            "Практикуйте медитацию для ясности ума.",
+            "Балансируйте работу и личную жизнь – счастье важнее эффективности."
+    };
 
     private final Runnable fallRunnable = new Runnable() {
         @Override
@@ -145,6 +204,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         createNotificationChannel();
+        Intent intent = getIntent();
+        selectedDate = intent.getStringExtra("selectedDate");
+        if (selectedDate == null) {
+            // Если дата не передана, используем текущую
+            selectedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        }
+
+        restoreGameState();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -152,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
                         new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
             }
         }
+        isTipShownInLifecycle = false;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.d("MainActivity", "Notification permission not granted");
@@ -219,14 +287,14 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "Pomodoro Notifications";
             String description = "Уведомления о ходе Pomodoro";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT; // Поддерживает звук
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
-            // Не устанавливаем setSound(null, null), чтобы звук определялся уведомлением
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
     }
+
     private void showNotification(String message) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -294,107 +362,117 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveGameState() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
-        editor.putInt(KEY_TETROMINO_COUNT, tetrominos.size());
+        // Сохраняем данные для конкретной даты
+        String datePrefix = selectedDate + "_";
+        editor.putInt(datePrefix + KEY_TETROMINO_COUNT, tetrominos.size());
 
         int currentTetrominoIndex = -1;
         if (currentTetromino != null) {
             currentTetrominoIndex = tetrominos.indexOf(currentTetromino);
         }
-        editor.putInt(KEY_CURRENT_TETROMINO_INDEX, currentTetrominoIndex);
+        editor.putInt(datePrefix + KEY_CURRENT_TETROMINO_INDEX, currentTetrominoIndex);
 
         for (int i = 0; i < tetrominos.size(); i++) {
             Tetromino tetromino = tetrominos.get(i);
-            editor.putInt(KEY_TETROMINO_POSITION + i, tetromino.position);
-            editor.putInt(KEY_TETROMINO_TYPE + i, tetromino.typeIndex);
-            editor.putInt(KEY_TETROMINO_ROTATION + i, tetromino.rotation);
-            editor.putInt(KEY_TETROMINO_COLOR + i, tetromino.originalColor);
-            editor.putString(KEY_TETROMINO_TITLE + i, tetromino.title);
-            editor.putString(KEY_TETROMINO_DESCRIPTION + i, tetromino.description);
-            editor.putString(KEY_TETROMINO_CATEGORY + i, tetromino.category);
-            editor.putInt(KEY_TETROMINO_DIFFICULTY + i, tetromino.difficulty);
-            editor.putInt(KEY_TETROMINO_TIME + i, tetromino.timeToComplete);
+            editor.putInt(datePrefix + KEY_TETROMINO_POSITION + i, tetromino.position);
+            editor.putInt(datePrefix + KEY_TETROMINO_TYPE + i, tetromino.typeIndex);
+            editor.putInt(datePrefix + KEY_TETROMINO_ROTATION + i, tetromino.rotation);
+            editor.putInt(datePrefix + KEY_TETROMINO_COLOR + i, tetromino.originalColor);
+            editor.putString(datePrefix + KEY_TETROMINO_TITLE + i, tetromino.title);
+            editor.putString(datePrefix + KEY_TETROMINO_DESCRIPTION + i, tetromino.description);
+            editor.putString(datePrefix + KEY_TETROMINO_CATEGORY + i, tetromino.category);
+            editor.putInt(datePrefix + KEY_TETROMINO_DIFFICULTY + i, tetromino.difficulty);
+            editor.putInt(datePrefix + KEY_TETROMINO_TIME + i, tetromino.timeToComplete);
         }
 
-        editor.putInt(KEY_COMPLETED_TETROMINO_COUNT, completedTetrominos.size());
-
+        editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_COUNT, completedTetrominos.size());
         for (int i = 0; i < completedTetrominos.size(); i++) {
             Tetromino tetromino = completedTetrominos.get(i);
-            editor.putInt(KEY_COMPLETED_TETROMINO_POSITION + i, tetromino.position);
-            editor.putInt(KEY_COMPLETED_TETROMINO_TYPE + i, tetromino.typeIndex);
-            editor.putInt(KEY_COMPLETED_TETROMINO_ROTATION + i, tetromino.rotation);
-            editor.putInt(KEY_COMPLETED_TETROMINO_COLOR + i, tetromino.originalColor);
-            editor.putString(KEY_COMPLETED_TETROMINO_TITLE + i, tetromino.title);
-            editor.putString(KEY_COMPLETED_TETROMINO_DESCRIPTION + i, tetromino.description);
-            editor.putString(KEY_COMPLETED_TETROMINO_CATEGORY + i, tetromino.category);
-            editor.putInt(KEY_COMPLETED_TETROMINO_DIFFICULTY + i, tetromino.difficulty);
-            editor.putInt(KEY_COMPLETED_TETROMINO_TIME + i, tetromino.timeToComplete);
+            editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_POSITION + i, tetromino.position);
+            editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_TYPE + i, tetromino.typeIndex);
+            editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_ROTATION + i, tetromino.rotation);
+            editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_COLOR + i, tetromino.originalColor);
+            editor.putString(datePrefix + KEY_COMPLETED_TETROMINO_TITLE + i, tetromino.title);
+            editor.putString(datePrefix + KEY_COMPLETED_TETROMINO_DESCRIPTION + i, tetromino.description);
+            editor.putString(datePrefix + KEY_COMPLETED_TETROMINO_CATEGORY + i, tetromino.category);
+            editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_DIFFICULTY + i, tetromino.difficulty);
+            editor.putInt(datePrefix + KEY_COMPLETED_TETROMINO_TIME + i, tetromino.timeToComplete);
         }
+
+        // Обновляем список дат с данными
+        Set<String> datesWithData = new HashSet<>(prefs.getStringSet("DatesWithData", new HashSet<>()));
+        if (!tetrominos.isEmpty() || !completedTetrominos.isEmpty()) {
+            datesWithData.add(selectedDate);
+        } else {
+            datesWithData.remove(selectedDate);
+        }
+        editor.putStringSet("DatesWithData", datesWithData);
 
         editor.apply();
     }
 
     private void restoreGameState() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String datePrefix = selectedDate + "_";
 
-        int tetrominoCount = prefs.getInt(KEY_TETROMINO_COUNT, 0);
-        if (tetrominoCount > 0) {
-            tetrominos.clear();
-            for (int i = 0; i < tetrominoCount; i++) {
-                int position = prefs.getInt(KEY_TETROMINO_POSITION + i, 0);
-                int typeIndex = prefs.getInt(KEY_TETROMINO_TYPE + i, 0);
-                int rotation = prefs.getInt(KEY_TETROMINO_ROTATION + i, 0);
-                int color = prefs.getInt(KEY_TETROMINO_COLOR + i, ContextCompat.getColor(this, colors[0]));
-                String title = prefs.getString(KEY_TETROMINO_TITLE + i, "");
-                String description = prefs.getString(KEY_TETROMINO_DESCRIPTION + i, "");
-                String category = prefs.getString(KEY_TETROMINO_CATEGORY + i, "");
-                int difficulty = prefs.getInt(KEY_TETROMINO_DIFFICULTY + i, 1);
-                int timeToComplete = prefs.getInt(KEY_TETROMINO_TIME + i, 0);
+        int tetrominoCount = prefs.getInt(datePrefix + KEY_TETROMINO_COUNT, 0);
+        tetrominos.clear();
+        for (int i = 0; i < tetrominoCount; i++) {
+            int position = prefs.getInt(datePrefix + KEY_TETROMINO_POSITION + i, 0);
+            int typeIndex = prefs.getInt(datePrefix + KEY_TETROMINO_TYPE + i, 0);
+            int rotation = prefs.getInt(datePrefix + KEY_TETROMINO_ROTATION + i, 0);
+            int color = prefs.getInt(datePrefix + KEY_TETROMINO_COLOR + i, ContextCompat.getColor(this, colors[0]));
+            String title = prefs.getString(datePrefix + KEY_TETROMINO_TITLE + i, "");
+            String description = prefs.getString(datePrefix + KEY_TETROMINO_DESCRIPTION + i, "");
+            String category = prefs.getString(datePrefix + KEY_TETROMINO_CATEGORY + i, "");
+            int difficulty = prefs.getInt(datePrefix + KEY_TETROMINO_DIFFICULTY + i, 1);
+            int timeToComplete = prefs.getInt(datePrefix + KEY_TETROMINO_TIME + i, 0);
 
-                int[] shape = generateShapeFromTimeAndDifficulty(timeToComplete, difficulty, rotation);
-                Tetromino tetromino = new Tetromino(position, shape, color, typeIndex, rotation,
-                        title, description, category, difficulty, timeToComplete);
-                tetrominos.add(tetromino);
-            }
-
-            int currentTetrominoIndex = prefs.getInt(KEY_CURRENT_TETROMINO_INDEX, -1);
-            if (currentTetrominoIndex >= 0 && currentTetrominoIndex < tetrominos.size()) {
-                currentTetromino = tetrominos.get(currentTetrominoIndex);
-                currentTetromino.color = SELECTED_COLOR;
-            } else {
-                currentTetromino = null;
-            }
-
-            tetrisView.setTetrominos(tetrominos);
-            tetrisView.setCurrentTetromino(currentTetromino);
-            updateControlButtonsVisibility();
-            tetrisView.invalidate();
+            int[] shape = generateShapeFromTimeAndDifficulty(timeToComplete, difficulty, rotation);
+            Tetromino tetromino = new Tetromino(position, shape, color, typeIndex, rotation,
+                    title, description, category, difficulty, timeToComplete);
+            tetrominos.add(tetromino);
         }
 
-        int completedTetrominoCount = prefs.getInt(KEY_COMPLETED_TETROMINO_COUNT, 0);
-        if (completedTetrominoCount > 0) {
-            completedTetrominos.clear();
-            for (int i = 0; i < completedTetrominoCount; i++) {
-                int position = prefs.getInt(KEY_COMPLETED_TETROMINO_POSITION + i, 0);
-                int typeIndex = prefs.getInt(KEY_COMPLETED_TETROMINO_TYPE + i, 0);
-                int rotation = prefs.getInt(KEY_COMPLETED_TETROMINO_ROTATION + i, 0);
-                int color = prefs.getInt(KEY_COMPLETED_TETROMINO_COLOR + i, ContextCompat.getColor(this, colors[0]));
-                String title = prefs.getString(KEY_COMPLETED_TETROMINO_TITLE + i, "");
-                String description = prefs.getString(KEY_COMPLETED_TETROMINO_DESCRIPTION + i, "");
-                String category = prefs.getString(KEY_COMPLETED_TETROMINO_CATEGORY + i, "");
-                int difficulty = prefs.getInt(KEY_COMPLETED_TETROMINO_DIFFICULTY + i, 1);
-                int timeToComplete = prefs.getInt(KEY_COMPLETED_TETROMINO_TIME + i, 0);
-
-                int[] shape = generateShapeFromTimeAndDifficulty(timeToComplete, difficulty, rotation);
-                Tetromino tetromino = new Tetromino(position, shape, color, typeIndex, rotation,
-                        title, description, category, difficulty, timeToComplete);
-                completedTetrominos.add(tetromino);
-            }
+        int currentTetrominoIndex = prefs.getInt(datePrefix + KEY_CURRENT_TETROMINO_INDEX, -1);
+        if (currentTetrominoIndex >= 0 && currentTetrominoIndex < tetrominos.size()) {
+            currentTetromino = tetrominos.get(currentTetrominoIndex);
+            currentTetromino.color = SELECTED_COLOR;
+        } else {
+            currentTetromino = null;
         }
+
+        int completedTetrominoCount = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_COUNT, 0);
+        completedTetrominos.clear();
+        for (int i = 0; i < completedTetrominoCount; i++) {
+            int position = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_POSITION + i, 0);
+            int typeIndex = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_TYPE + i, 0);
+            int rotation = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_ROTATION + i, 0);
+            int color = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_COLOR + i, ContextCompat.getColor(this, colors[0]));
+            String title = prefs.getString(datePrefix + KEY_COMPLETED_TETROMINO_TITLE + i, "");
+            String description = prefs.getString(datePrefix + KEY_COMPLETED_TETROMINO_DESCRIPTION + i, "");
+            String category = prefs.getString(datePrefix + KEY_COMPLETED_TETROMINO_CATEGORY + i, "");
+            int difficulty = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_DIFFICULTY + i, 1);
+            int timeToComplete = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_TIME + i, 0);
+
+            int[] shape = generateShapeFromTimeAndDifficulty(timeToComplete, difficulty, rotation);
+            Tetromino tetromino = new Tetromino(position, shape, color, typeIndex, rotation,
+                    title, description, category, difficulty, timeToComplete);
+            completedTetrominos.add(tetromino);
+        }
+
+        if (tetrominos.isEmpty()) {
+            createNewTetromino(null);
+        }
+
+        tetrisView.setTetrominos(tetrominos);
+        tetrisView.setCurrentTetromino(currentTetromino);
+        updateControlButtonsVisibility();
+        tetrisView.invalidate();
     }
-
     static class Tetromino implements java.io.Serializable {
         int position;
         int[] shape;
@@ -585,6 +663,11 @@ public class MainActivity extends AppCompatActivity {
             tetrisView.setCurrentTetromino(currentTetromino);
             updateControlButtonsVisibility();
             tetrisView.invalidate();
+
+            // Проверка заполненного столбца после добавления
+            if (tetrisView.checkFullColumn()) {
+                showTimeManagementTip();
+            }
         });
 
         builder.setNegativeButton("Отмена", (dialog, which) -> dialog.dismiss());
@@ -599,13 +682,13 @@ public class MainActivity extends AppCompatActivity {
             timeLeftInMillis = pomodoroService.getTimeLeftInMillis();
             isWorkPeriod = pomodoroService.isWorkPeriod();
             if (!isPomodoroRunning && timeLeftInMillis <= 0 && !isWorkPeriod) {
-                // Цикл завершён
                 timeLeftInMillis = workDuration;
                 isWorkPeriod = true;
             }
             Log.d("MainActivity", "Synced with service: running=" + isPomodoroRunning + ", timeLeft=" + timeLeftInMillis + ", isWork=" + isWorkPeriod);
         }
     }
+
     public void viewTetrominoInfo(View view) {
         if (currentTetromino == null) {
             Toast.makeText(this, "Тетромино не выбрано", Toast.LENGTH_SHORT).show();
@@ -617,7 +700,6 @@ public class MainActivity extends AppCompatActivity {
         View dialogView = inflater.inflate(R.layout.dialog_view_tetromino, null);
         builder.setView(dialogView);
 
-        // Инициализация UI элементов
         TextView textTitle = dialogView.findViewById(R.id.text_title);
         TextView textDescription = dialogView.findViewById(R.id.text_description);
         TextView textCategory = dialogView.findViewById(R.id.text_category);
@@ -640,7 +722,6 @@ public class MainActivity extends AppCompatActivity {
         int timeInMinutes = currentTetromino.timeToComplete / 60;
         textTime.setText("Время: " + timeInMinutes + " минут");
 
-        // Логика для кнопки показа/скрытия Pomodoro
         final boolean[] isPomodoroVisible = {false};
         btnTogglePomodoro.setText("Показать Pomodoro");
         btnTogglePomodoro.setOnClickListener(v -> {
@@ -654,7 +735,6 @@ public class MainActivity extends AppCompatActivity {
             isPomodoroVisible[0] = !isPomodoroVisible[0];
         });
 
-        // Расчёт параметров Pomodoro
         long totalWorkTime = currentTetromino.timeToComplete * 1000L;
         final long DEFAULT_WORK_DURATION = 25 * 60 * 1000L;
         final long DEFAULT_BREAK_DURATION = 5 * 60 * 1000L;
@@ -664,7 +744,6 @@ public class MainActivity extends AppCompatActivity {
         final long totalTime = currentTetromino.timeToComplete * 1000L;
         final long[] remainingWorkTime = new long[1];
 
-        // Параметр ускорения времени
         final int TIME_ACCELERATION_FACTOR = 10;
         final long UPDATE_INTERVAL = 1000 / TIME_ACCELERATION_FACTOR;
 
@@ -685,7 +764,6 @@ public class MainActivity extends AppCompatActivity {
             workDurationForTimer[0] = DEFAULT_WORK_DURATION;
         }
 
-        // Инициализация начального состояния
         workCyclesCompleted[0] = 0;
         if (isServiceBound && pomodoroService != null && pomodoroService.isRunning()) {
             workCyclesCompleted[0] = pomodoroService.getWorkCyclesCompleted();
@@ -768,7 +846,6 @@ public class MainActivity extends AppCompatActivity {
                 pomodoroTimer.setText(String.format("%02d:%02d", minutes, seconds));
             } else if (isServiceBound && pomodoroService != null) {
                 if (isPomodoroRunning) {
-                    // Пауза
                     timeLeftInMillis = pomodoroService.getTimeLeftInMillis();
                     isWorkPeriod = pomodoroService.isWorkPeriod();
                     pomodoroService.pauseTimer();
@@ -778,7 +855,6 @@ public class MainActivity extends AppCompatActivity {
                     btnReset.setEnabled(true);
                     updatePomodoroTimerText(pomodoroTimer);
                 } else {
-                    // Продолжить
                     pomodoroService.resumeTimer(timeLeftInMillis, isWorkPeriod);
                     isPomodoroRunning = true;
                     pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
@@ -848,6 +924,7 @@ public class MainActivity extends AppCompatActivity {
         dialog.setOnDismissListener(d -> timerHandler.removeCallbacks(timerRunnable));
         dialog.show();
     }
+
     private void updatePomodoroTimerText(TextView timer) {
         int minutes = (int) (timeLeftInMillis / 1000) / 60;
         int seconds = (int) (timeLeftInMillis / 1000) % 60;
@@ -861,11 +938,9 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Поворот против часовой стрелки: 0 → 3 → 2 → 1
         int newRotation = (currentTetromino.rotation - 1 + 4) % 4;
         int[] currentShape = currentTetromino.shape;
 
-        // Определяем текущие размеры формы
         int minRow = HEIGHT, maxRow = -1;
         int minCol = WIDTH, maxCol = -1;
         for (int index : currentShape) {
@@ -879,7 +954,6 @@ public class MainActivity extends AppCompatActivity {
         int height = maxRow - minRow + 1;
         int width = maxCol - minCol + 1;
 
-        // Создаём матрицу текущей формы
         boolean[][] matrix = new boolean[height][width];
         for (int index : currentShape) {
             int row = (index / WIDTH) - minRow;
@@ -887,9 +961,8 @@ public class MainActivity extends AppCompatActivity {
             matrix[row][col] = true;
         }
 
-        // Поворачиваем матрицу на 90° против часовой стрелки
-        int newHeight = width;  // Новая высота = старая ширина
-        int newWidth = height;  // Новая ширина = старая высота
+        int newHeight = width;
+        int newWidth = height;
         boolean[][] rotatedMatrix = new boolean[newHeight][newWidth];
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
@@ -897,7 +970,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Преобразуем матрицу обратно в массив позиций
         int[] newShape = new int[height * width];
         int index = 0;
         for (int row = 0; row < newHeight; row++) {
@@ -908,10 +980,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Корректируем позицию с учётом обёртывания только по горизонтали
         int newPosition = currentTetromino.position;
 
-        // Проверяем, помещается ли новая форма по вертикали
         int minNewRow = HEIGHT, maxNewRow = -1;
         for (int posIndex : newShape) {
             int pos = newPosition + posIndex;
@@ -921,47 +991,46 @@ public class MainActivity extends AppCompatActivity {
             maxNewRow = Math.max(maxNewRow, row);
         }
 
-        // Если выходит за верхнюю или нижнюю границу, корректируем позицию
         if (minNewRow < 0) {
-            newPosition += (-minNewRow) * WIDTH; // Сдвигаем вниз
+            newPosition += (-minNewRow) * WIDTH;
         } else if (maxNewRow >= HEIGHT) {
-            newPosition -= (maxNewRow - (HEIGHT - 1)) * WIDTH; // Сдвигаем вверх
+            newPosition -= (maxNewRow - (HEIGHT - 1)) * WIDTH;
         }
 
-        // Применяем обёртывание по горизонтали после корректировки
         newPosition = wrapPosition(newPosition);
 
-        // Проверка на столкновение
         for (int posIndex : newShape) {
             int pos = wrapPosition(newPosition + posIndex);
             int row = pos / WIDTH;
             if (row < 0 || row >= HEIGHT) {
                 Log.d("MainActivity", "Поворот невозможен: выходит за вертикальные границы на позиции " + pos);
-                return; // Отмена поворота, если всё ещё выходит за границы
+                return;
             }
             if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
                 Log.d("MainActivity", "Поворот невозможен: позиция " + pos + " занята");
-                return; // Отмена поворота, если есть пересечение
+                return;
             }
         }
 
-        // Применяем поворот
         currentTetromino.rotation = newRotation;
         currentTetromino.shape = newShape;
         currentTetromino.position = newPosition;
 
         Log.d("MainActivity", "Поворот успешен: newRotation=" + newRotation + ", newPosition=" + newPosition);
-        tetrisView.invalidate(); // Перерисовываем поле
+        tetrisView.invalidate();
+
+        // Проверка заполненного столбца после поворота
+        if (tetrisView.checkFullColumn()) {
+            showTimeManagementTip();
+        }
     }
 
     private int wrapPosition(int position) {
         int row = position / WIDTH;
         int col = position % WIDTH;
 
-        // Обёртывание по горизонтали
-        col = (col + WIDTH) % WIDTH; // Если col < 0 или col >= WIDTH, переносим на другую сторону
+        col = (col + WIDTH) % WIDTH;
 
-        // Вертикаль остаётся без обёртывания, но ограничивается границами
         if (row < 0) row = 0;
         if (row >= HEIGHT) row = HEIGHT - 1;
 
@@ -985,15 +1054,12 @@ public class MainActivity extends AppCompatActivity {
     public void moveLeft(View view) {
         if (currentTetromino == null) return;
 
-        // Разделяем текущую позицию на row и col
         int currentRow = currentTetromino.position / WIDTH;
         int currentCol = currentTetromino.position % WIDTH;
 
-        // Двигаемся влево только по горизонтали
-        int newCol = (currentCol - 1 + WIDTH) % WIDTH; // Обёртывание влево
+        int newCol = (currentCol - 1 + WIDTH) % WIDTH;
         int newPosition = currentRow * WIDTH + newCol;
 
-        // Проверка на столкновение
         for (int index : currentTetromino.shape) {
             int pos = newPosition + index;
             int row = pos / WIDTH;
@@ -1010,20 +1076,22 @@ public class MainActivity extends AppCompatActivity {
         currentTetromino.position = newPosition;
         tetrisView.invalidate();
         Log.d("MainActivity", "Движение влево: newPosition=" + newPosition);
+
+        // Проверка заполненного столбца после движения
+        if (tetrisView.checkFullColumn()) {
+            showTimeManagementTip();
+        }
     }
 
     public void moveRight(View view) {
         if (currentTetromino == null) return;
 
-        // Разделяем текущую позицию на row и col
         int currentRow = currentTetromino.position / WIDTH;
         int currentCol = currentTetromino.position % WIDTH;
 
-        // Двигаемся вправо только по горизонтали
-        int newCol = (currentCol + 1) % WIDTH; // Обёртывание вправо
+        int newCol = (currentCol + 1) % WIDTH;
         int newPosition = currentRow * WIDTH + newCol;
 
-        // Проверка на столкновение
         for (int index : currentTetromino.shape) {
             int pos = newPosition + index;
             int row = pos / WIDTH;
@@ -1040,13 +1108,18 @@ public class MainActivity extends AppCompatActivity {
         currentTetromino.position = newPosition;
         tetrisView.invalidate();
         Log.d("MainActivity", "Движение вправо: newPosition=" + newPosition);
+
+        // Проверка заполненного столбца после движения
+        if (tetrisView.checkFullColumn()) {
+            showTimeManagementTip();
+        }
     }
 
     public void moveUp(View view) {
         if (currentTetromino == null) return;
         int newPosition = currentTetromino.position - WIDTH;
         for (int index : currentTetromino.shape) {
-            int pos = newPosition + index; // Без wrapPosition, так как верхняя граница жёсткая
+            int pos = newPosition + index;
             int row = pos / WIDTH;
             if (row < 0) {
                 Log.d("MainActivity", "Нельзя двигаться вверх: верхняя граница");
@@ -1060,13 +1133,18 @@ public class MainActivity extends AppCompatActivity {
         currentTetromino.position = newPosition;
         tetrisView.invalidate();
         Log.d("MainActivity", "Движение вверх: newPosition=" + newPosition);
+
+        // Проверка заполненного столбца после движения
+        if (tetrisView.checkFullColumn()) {
+            showTimeManagementTip();
+        }
     }
 
     public void moveDown(View view) {
         if (currentTetromino == null) return;
         int newPosition = currentTetromino.position + WIDTH;
         for (int index : currentTetromino.shape) {
-            int pos = newPosition + index; // Без wrapPosition, так как нижняя граница жёсткая
+            int pos = newPosition + index;
             int row = pos / WIDTH;
             if (row >= HEIGHT) {
                 Log.d("MainActivity", "Нельзя двигаться вниз: нижняя граница");
@@ -1080,12 +1158,17 @@ public class MainActivity extends AppCompatActivity {
         currentTetromino.position = newPosition;
         tetrisView.invalidate();
         Log.d("MainActivity", "Движение вниз: newPosition=" + newPosition);
+
+        // Проверка заполненного столбца после движения
+        if (tetrisView.checkFullColumn()) {
+            showTimeManagementTip();
+        }
     }
 
     private void moveTetrominoDown(Tetromino tetromino) {
         int newPosition = tetromino.position + WIDTH;
         for (int index : tetromino.shape) {
-            int pos = newPosition + index; // Без wrapPosition для падения
+            int pos = newPosition + index;
             int row = pos / WIDTH;
             if (row >= HEIGHT) {
                 Log.d("MainActivity", "Падение остановлено: нижняя граница");
@@ -1099,6 +1182,11 @@ public class MainActivity extends AppCompatActivity {
         tetromino.position = newPosition;
         tetrisView.invalidate();
         Log.d("MainActivity", "Тетромино упало: newPosition=" + newPosition);
+
+        // Проверка заполненного столбца после падения
+        if (tetrisView.checkFullColumn()) {
+            showTimeManagementTip();
+        }
     }
 
     private boolean canMoveUp(Tetromino tetromino) {
@@ -1162,5 +1250,30 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    // Обновленный метод для показа совета через Dialog
+    private void showTimeManagementTip() {
+        // Проверяем, был ли уже показан совет в текущем жизненном цикле
+        if (isTipShownInLifecycle) {
+            Log.d("MainActivity", "Совет уже показан в этом жизненном цикле, пропускаем");
+            return;
+        }
+
+        Random random = new Random();
+        int tipIndex = random.nextInt(timeManagementTips.length);
+        String tip = timeManagementTips[tipIndex];
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Совет по тайм-менеджменту");
+        builder.setMessage("Столбец заполнен!\n\n" + tip);
+        builder.setPositiveButton("ОК", (dialog, which) -> dialog.dismiss());
+        builder.setCancelable(false);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Устанавливаем флаг после показа совета
+        isTipShownInLifecycle = true;
+        Log.d("MainActivity", "Совет показан, флаг установлен: " + isTipShownInLifecycle);
     }
 }

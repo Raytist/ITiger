@@ -16,9 +16,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") } // Добавьте эту строку
     }
 }
 
 rootProject.name = "ITiger"
 include(":app")
- 

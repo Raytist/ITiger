@@ -21,6 +21,75 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.9" />
 
+    <LinearLayout
+        android:id="@+id/linearLayout4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toStartOf="@+id/tetrisView"
+        app:layout_constraintStart_toEndOf="@+id/tetrisView"
+        app:layout_constraintTop_toBottomOf="@+id/tetrisView">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="8" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="10" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="12" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="14" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="16" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="18" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="20" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="22" />
+
+    </LinearLayout>
+
     <!-- Кнопки управления -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="wrap_content"
@@ -70,6 +139,7 @@
             android:onClick="moveLeft"
             android:text="←"
             android:textSize="32sp"
+            android:paddingBottom="15dp"
             app:layout_constraintBottom_toBottomOf="@+id/linearLayout"
             app:layout_constraintEnd_toStartOf="@+id/linearLayout"
             app:layout_constraintTop_toTopOf="@+id/linearLayout" />
@@ -81,6 +151,7 @@
             android:layout_height="50dp"
             android:background="@drawable/move_button"
             android:onClick="moveRight"
+            android:paddingBottom="15dp"
             android:text="→"
             android:textSize="32sp"
             app:layout_constraintBottom_toBottomOf="@+id/linearLayout"
@@ -118,21 +189,22 @@
             android:scaleType="fitXY"
             android:src="@drawable/baseline_360_24" />
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/linearLayout3"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="5dp"
         app:layout_constraintEnd_toEndOf="@+id/linearLayout2"
         app:layout_constraintStart_toStartOf="@+id/linearLayout2"
-        app:layout_constraintTop_toBottomOf="@+id/tetrisView">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnArchive"
-            android:layout_marginEnd="5dp"
             android:layout_width="match_parent"
-            android:layout_weight="1"
             android:layout_height="50dp"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1"
             android:background="@drawable/move_button"
             android:onClick="openArchive"
             android:text="АРХИВ"
@@ -141,9 +213,9 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnNewTetromino"
             android:layout_width="match_parent"
-            android:layout_weight="1"
             android:layout_height="50dp"
             android:layout_marginStart="5dp"
+            android:layout_weight="1"
             android:background="@drawable/move_button"
             android:gravity="center"
             android:onClick="createNewTetromino"
