@@ -34,9 +34,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.app.NotificationCompat;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -44,7 +48,33 @@ import java.util.Random;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
+    private AppCompatImageButton btnPreviousDay;
+    private AppCompatImageButton btnNextDay;
+    private TextView tvCurrentDate;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd",new Locale ("ru"));
+    private SimpleDateFormat displayDateFormat = new SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault());
+    private String formatDateRussian(String dateStr) {
+        try {
+            Date date = dateFormat.parse(dateStr);
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
 
+            String[] days = {"Воскресенье", "Понедельник", "Вторник", "Среда",
+                    "Четверг", "Пятница", "Суббота"};
+            String[] months = {"января", "февраля", "марта", "апреля", "мая", "июня",
+                    "июля", "августа", "сентября", "октября", "ноября", "декабря"};
+
+            String dayOfWeek = days[cal.get(Calendar.DAY_OF_WEEK) - 1];
+            int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
+            String month = months[cal.get(Calendar.MONTH)];
+            int year = cal.get(Calendar.YEAR);
+
+            return String.format("%s, %d %s %d", dayOfWeek, dayOfMonth, month, year);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return dateStr;
+        }
+    }
     private TetrisView tetrisView;
     private static final String KEY_MODIFIED_DATES = "ModifiedDates";
     private ArrayList<Tetromino> tetrominos = new ArrayList<>();
@@ -230,7 +260,12 @@ public class MainActivity extends AppCompatActivity {
         buttonLeft = findViewById(R.id.btnLeft);
         buttonRight = findViewById(R.id.btnRight);
         buttonViewInfo = findViewById(R.id.btnInfo);
-
+        btnPreviousDay = findViewById(R.id.btnPreviousDay);
+        btnNextDay = findViewById(R.id.btnNextDay);
+        tvCurrentDate = findViewById(R.id.tvCurrentDate);
+        btnPreviousDay.setOnClickListener(v -> navigateToAdjacentDay(-1));
+        btnNextDay.setOnClickListener(v -> navigateToAdjacentDay(1));
+        updateDateDisplay();
         // Проверяем разрешения на уведомления
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -289,6 +324,38 @@ public class MainActivity extends AppCompatActivity {
             isServiceBound = false;
         }
     }
+    private void navigateToAdjacentDay(int daysToAdd) {
+        try {
+            Date currentDate = dateFormat.parse(selectedDate);
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(currentDate);
+            calendar.add(Calendar.DAY_OF_YEAR, daysToAdd);
+
+            String newDate = dateFormat.format(calendar.getTime());
+            selectedDate = newDate;
+
+            // Обновляем данные для новой даты
+            restoreGameState();
+            updateDateDisplay();
+
+            // Сохраняем состояние для предыдущей даты
+            saveGameState();
+        } catch (ParseException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Ошибка при изменении даты", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateDateDisplay() {
+        try {
+            Date date = dateFormat.parse(selectedDate);
+            String displayDate = displayDateFormat.format(date);
+            tvCurrentDate.setText(displayDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            tvCurrentDate.setText(selectedDate);
+        }
+    }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -322,30 +389,15 @@ public class MainActivity extends AppCompatActivity {
 
     public void openArchive(View view) {
         Intent intent = new Intent(this, ArchiveActivity.class);
-        startActivityForResult(intent, ARCHIVE_REQUEST_CODE);
+        startActivityForResult(intent, 1);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ARCHIVE_REQUEST_CODE && resultCode == RESULT_OK) {
-            if (data != null) {
-                Object serializableExtra = data.getSerializableExtra("updatedCompletedTetrominos");
-                if (serializableExtra instanceof ArrayList) {
-                    ArrayList<TetrominoWithDate> updatedList = (ArrayList<TetrominoWithDate>) serializableExtra;
-                    completedTetrominos.clear();
-                    for (TetrominoWithDate item : updatedList) {
-                        if (item.date.equals(selectedDate)) {
-                            completedTetrominos.add(item.tetromino);
-                        }
-                    }
-                    saveGameState();
-                    if (tetrisView != null) {
-                        tetrisView.setTetrominos(tetrominos);
-                        tetrisView.invalidate();
-                    }
-                }
-            }
+        if (requestCode == 1 && resultCode == RESULT_OK) {
+            NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_bottom_nuv);
+            navController.navigate(R.id.navigation_dashboard); // Перезагрузка фрагмента
         }
     }
     static class TetrominoWithDate implements java.io.Serializable {
@@ -507,6 +559,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Log.e("MainActivity", "TetrisView is null in restoreGameState");
         }
+        updateDateDisplay();
     }
 
     static class Tetromino implements java.io.Serializable {
@@ -953,6 +1006,7 @@ public class MainActivity extends AppCompatActivity {
                 updateControlButtonsVisibility();
                 tetrisView.invalidate();
             }
+            saveGameState();
             dialog.dismiss();
         });
 

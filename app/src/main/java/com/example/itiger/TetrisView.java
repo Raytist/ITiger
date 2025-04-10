@@ -39,9 +39,9 @@ public class TetrisView extends View {
 
     private void init() {
         gridPaint = new Paint();
-        gridPaint.setColor(Color.GRAY);
+        gridPaint.setColor(Color.parseColor("#c994ff"));
         gridPaint.setStyle(Paint.Style.STROKE);
-        gridPaint.setStrokeWidth(2f);
+        gridPaint.setStrokeWidth(3f);
 
         tetrominoPaint = new Paint();
         tetrominoPaint.setStyle(Paint.Style.FILL);

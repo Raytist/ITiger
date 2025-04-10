@@ -21,4 +21,8 @@
     <string name="category_label">Категория: %1$s</string>
     <string name="difficulty_label">Сложность: %1$d</string>
     <string name="time_label">Время: %1$d минут</string>
+    <string name="title_activity_bottom_nuv">BottomNuv</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
 </resources>

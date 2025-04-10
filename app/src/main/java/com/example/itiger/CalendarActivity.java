@@ -1,5 +1,6 @@
 package com.example.itiger;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -19,10 +20,11 @@ public class CalendarActivity extends AppCompatActivity {
     private static final String KEY_DATES_WITH_DATA = "DatesWithData";
     private static final String KEY_MODIFIED_DATES = "ModifiedDates";
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_calendar);
+        setContentView(R.layout.fragment_home);
 
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         calendarView = findViewById(R.id.calendarView);

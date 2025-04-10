@@ -2,55 +2,57 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="5dp">
+    <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
     android:background="@drawable/background_radius15"
     android:orientation="vertical"
+
     android:padding="16dp">
+        <TextView
+            android:id="@+id/text_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Информация"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
 
-    <!-- Заголовок -->
-    <TextView
-        android:id="@+id/text_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Информация"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        android:paddingBottom="8dp" />
+        <!-- Текст -->
+        <TextView
+            android:id="@+id/text_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Текст"
+            android:paddingBottom="8dp" />
 
-    <!-- Текст -->
-    <TextView
-        android:id="@+id/text_description"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Текст"
-        android:textColor="@color/white"
-        android:paddingBottom="8dp" />
+        <!-- Категория -->
+        <TextView
+            android:id="@+id/text_category"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Категория: "
+            android:paddingBottom="8dp" />
 
-    <!-- Категория -->
-    <TextView
-        android:id="@+id/text_category"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Категория: "
-        android:textColor="@color/white"
-        android:paddingBottom="8dp" />
+        <!-- Сложность -->
+        <TextView
+            android:id="@+id/text_difficulty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сложность: "
+            android:paddingBottom="8dp" />
 
-    <!-- Сложность -->
-    <TextView
-        android:id="@+id/text_difficulty"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Сложность: "
-        android:textColor="@color/white"
-        android:paddingBottom="8dp" />
+        <!-- Время -->
+        <TextView
+            android:id="@+id/text_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Время: "
+            android:paddingBottom="8dp" />
 
-    <!-- Время -->
-    <TextView
-        android:id="@+id/text_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Время: "
-        android:textColor="@color/white"
-        android:paddingBottom="8dp" />
+    </LinearLayout>
 
 </LinearLayout>

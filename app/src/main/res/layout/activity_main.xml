@@ -4,10 +4,41 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#c994ff"
+    android:background="@color/white"
     tools:context=".MainActivity"
     android:padding="16dp">
 
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/btnPreviousDay"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@drawable/move_button"
+        android:padding="15dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/baseline_arrow_back_ios_new_24"
+        app:layout_constraintBottom_toTopOf="@+id/tetrisView"
+        app:layout_constraintStart_toStartOf="@+id/tetrisView" />
+
+    <TextView
+        android:id="@+id/tvCurrentDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/tetrisView"
+        app:layout_constraintEnd_toStartOf="@+id/btnNextDay"
+        app:layout_constraintStart_toEndOf="@+id/btnPreviousDay"
+        app:layout_constraintTop_toTopOf="@+id/btnNextDay" />
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/btnNextDay"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@drawable/move_button"
+        android:padding="15dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/baseline_arrow_forward_ios_24"
+        app:layout_constraintBottom_toTopOf="@+id/tetrisView"
+        app:layout_constraintEnd_toEndOf="@+id/tetrisView" />
     <com.example.itiger.TetrisView
         android:id="@+id/tetrisView"
         android:layout_width="0dp"
@@ -195,20 +226,9 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_marginTop="5dp"
-        app:layout_constraintEnd_toEndOf="@+id/linearLayout2"
-        app:layout_constraintStart_toStartOf="@+id/linearLayout2"
+        app:layout_constraintEnd_toEndOf="@+id/tetrisView"
+        app:layout_constraintStart_toStartOf="@+id/tetrisView"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnArchive"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginEnd="5dp"
-            android:layout_weight="1"
-            android:background="@drawable/move_button"
-            android:onClick="openArchive"
-            android:text="АРХИВ"
-            android:textAllCaps="false" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnNewTetromino"
