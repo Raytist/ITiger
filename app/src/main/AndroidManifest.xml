@@ -18,6 +18,9 @@
         android:theme="@style/Theme.ITiger"
         tools:targetApi="33">
         <activity
+            android:name=".WeekTetrisActivity"
+            android:exported="false" />
+        <activity
             android:name=".CalendarActivity"
             android:exported="false"
             android:label="@string/title_activity_bottom_nuv" />
@@ -38,7 +41,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait"></activity>
+            android:screenOrientation="portrait" />
 
         <service
             android:name=".PomodoroService"

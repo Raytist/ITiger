@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.CalendarView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatButton;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
@@ -19,6 +21,7 @@ public class CalendarActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "TetrisPrefs";
     private static final String KEY_DATES_WITH_DATA = "DatesWithData";
     private static final String KEY_MODIFIED_DATES = "ModifiedDates";
+
 
     @SuppressLint("MissingInflatedId")
     @Override

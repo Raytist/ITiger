@@ -11,16 +11,16 @@ import android.view.View;
 import java.util.ArrayList;
 
 public class TetrisView extends View {
-
-    private ArrayList<MainActivity.Tetromino> tetrominos;
+    private ArrayList<MainActivity.Tetromino> tetrominos = new ArrayList<>();
     private MainActivity.Tetromino currentTetromino;
+    private int width = 8; // По умолчанию 8, но для недельного Тетриса будет 7
+    private int height = 8;
+    private Paint paint;
     private OnTetrominoSelectedListener listener;
-    private final int WIDTH = 8;
-    private final int HEIGHT = 8;
-    private float cellSize;
-    private Paint gridPaint;
-    private Paint tetrominoPaint;
-    private Paint textPaint;
+    private OnTetrominoLongPressListener longPressListener;
+    private boolean interactionEnabled = true;
+    private float cellWidth;
+    private float cellHeight;
 
     public TetrisView(Context context) {
         super(context);
@@ -32,109 +32,111 @@ public class TetrisView extends View {
         init();
     }
 
-    public TetrisView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
+    private void init() {
+        paint = new Paint();
+        paint.setAntiAlias(true);
     }
 
-    private void init() {
-        gridPaint = new Paint();
-        gridPaint.setColor(Color.parseColor("#c994ff"));
-        gridPaint.setStyle(Paint.Style.STROKE);
-        gridPaint.setStrokeWidth(3f);
+    public void setInteractionEnabled(boolean enabled) {
+        this.interactionEnabled = enabled;
+    }
 
-        tetrominoPaint = new Paint();
-        tetrominoPaint.setStyle(Paint.Style.FILL);
+    public void setWidth(int newWidth) {
+        this.width = newWidth;
+        updateCellDimensions();
+        invalidate();
+    }
 
-        textPaint = new Paint();
-        textPaint.setColor(Color.BLACK);
-        textPaint.setTextSize(30f);
-        textPaint.setTextAlign(Paint.Align.CENTER);
+    public void setHeight(int newHeight) {
+        this.height = newHeight;
+        updateCellDimensions();
+        invalidate();
+    }
+
+    private void updateCellDimensions() {
+        if (getWidth() > 0 && getHeight() > 0) {
+            cellWidth = (float) getWidth() / width;
+            cellHeight = (float) getHeight() / height;
+        }
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        updateCellDimensions();
     }
 
     public void setTetrominos(ArrayList<MainActivity.Tetromino> tetrominos) {
         this.tetrominos = tetrominos;
     }
 
-    public void setCurrentTetromino(MainActivity.Tetromino currentTetromino) {
-        this.currentTetromino = currentTetromino;
+    public void setCurrentTetromino(MainActivity.Tetromino tetromino) {
+        this.currentTetromino = tetromino;
     }
 
     public void setOnTetrominoSelectedListener(OnTetrominoSelectedListener listener) {
         this.listener = listener;
     }
 
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        cellSize = Math.min(w / (float) WIDTH, h / (float) HEIGHT);
-        textPaint.setTextSize(cellSize * 0.5f);
+    public void setOnTetrominoLongPressListener(OnTetrominoLongPressListener listener) {
+        this.longPressListener = listener;
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        for (int i = 0; i <= WIDTH; i++) {
-            canvas.drawLine(i * cellSize, 0, i * cellSize, HEIGHT * cellSize, gridPaint);
+        // Рисуем сетку
+        paint.setColor(Color.LTGRAY);
+        paint.setStyle(Paint.Style.STROKE);
+        for (int i = 0; i <= width; i++) {
+            canvas.drawLine(i * cellWidth, 0, i * cellWidth, getHeight(), paint);
         }
-        for (int i = 0; i <= HEIGHT; i++) {
-            canvas.drawLine(0, i * cellSize, WIDTH * cellSize, i * cellSize, gridPaint);
+        for (int i = 0; i <= height; i++) {
+            canvas.drawLine(0, i * cellHeight, getWidth(), i * cellHeight, paint);
         }
 
-        if (tetrominos != null) {
-            for (MainActivity.Tetromino tetromino : tetrominos) {
-                tetrominoPaint.setColor(tetromino.color);
-                for (int index : tetromino.shape) {
-                    int pos = tetromino.position + index;
-                    int row = pos / WIDTH;
-                    int col = pos % WIDTH;
-                    if (row >= 0 && row < HEIGHT && col >= 0 && col < WIDTH) {
-                        canvas.drawRect(
-                                col * cellSize,
-                                row * cellSize,
-                                (col + 1) * cellSize,
-                                (row + 1) * cellSize,
-                                tetrominoPaint
-                        );
-                    }
-                }
+        // Рисуем тетромино
+        for (MainActivity.Tetromino tetromino : tetrominos) {
+            paint.setColor(tetromino.color);
+            paint.setStyle(Paint.Style.FILL);
+            for (int index : tetromino.shape) {
+                int row = index / width;
+                int col = index % width;
+                canvas.drawRect(col * cellWidth, row * cellHeight,
+                        (col + 1) * cellWidth, (row + 1) * cellHeight, paint);
             }
         }
 
-        drawHours(canvas);
-    }
-
-    private void drawHours(Canvas canvas) {
-        int totalHours = 15; // 22 - 8 + 1
-        int hoursPerColumn = totalHours / WIDTH;
-        if (hoursPerColumn == 0) hoursPerColumn = 1;
-
-        for (int col = 0; col < WIDTH; col++) {
-            int hour = 8 + col * hoursPerColumn;
-            if (hour > 22) hour = 22;
-            float x = col * cellSize + cellSize / 2;
-            float y = HEIGHT * cellSize + cellSize * 0.8f;
-            canvas.drawText(String.valueOf(hour), x, y, textPaint);
+        // Рисуем текущий (выбранный) тетромино, если он есть
+        if (currentTetromino != null) {
+            paint.setColor(currentTetromino.color);
+            paint.setStyle(Paint.Style.FILL);
+            for (int index : currentTetromino.shape) {
+                int row = index / width;
+                int col = index % width;
+                canvas.drawRect(col * cellWidth, row * cellHeight,
+                        (col + 1) * cellWidth, (row + 1) * cellHeight, paint);
+            }
         }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            float x = event.getX();
-            float y = event.getY();
-            int col = (int) (x / cellSize);
-            int row = (int) (y / cellSize);
-            int position = row * WIDTH + col;
+            int col = (int) (event.getX() / cellWidth);
+            int row = (int) (event.getY() / cellHeight);
+            int position = row * width + col;
 
-            if (row >= 0 && row < HEIGHT && col >= 0 && col < WIDTH) {
-                for (MainActivity.Tetromino tetromino : tetrominos) {
-                    for (int index : tetromino.shape) {
-                        if (tetromino.position + index == position) {
-                            if (listener != null) {
-                                listener.onTetrominoSelected(tetromino);
-                            }
+            for (MainActivity.Tetromino tetromino : tetrominos) {
+                for (int index : tetromino.shape) {
+                    if (index == position) {
+                        if (!interactionEnabled && longPressListener != null) {
+                            longPressListener.onTetrominoLongPressed(tetromino);
+                            return true;
+                        }
+                        if (interactionEnabled && listener != null) {
+                            listener.onTetrominoSelected(tetromino);
                             return true;
                         }
                     }
@@ -144,37 +146,36 @@ public class TetrisView extends View {
         return super.onTouchEvent(event);
     }
 
-    // Обновленный метод для проверки заполненного столбца
     public boolean checkFullColumn() {
-        if (tetrominos == null) return false;
-
-        boolean[] occupied = new boolean[WIDTH * HEIGHT];
-        for (MainActivity.Tetromino tetromino : tetrominos) {
-            for (int index : tetromino.shape) {
-                int pos = tetromino.position + index;
-                if (pos >= 0 && pos < WIDTH * HEIGHT) {
-                    occupied[pos] = true;
-                }
-            }
-        }
-
-        // Проверяем каждый столбец
-        for (int col = 0; col < WIDTH; col++) {
+        for (int col = 0; col < width; col++) {
             boolean isFull = true;
-            for (int row = 0; row < HEIGHT; row++) {
-                if (!occupied[row * WIDTH + col]) {
+            for (int row = 0; row < height; row++) {
+                int pos = row * width + col;
+                boolean occupied = false;
+                for (MainActivity.Tetromino tetromino : tetrominos) {
+                    for (int index : tetromino.shape) {
+                        if (index == pos) {
+                            occupied = true;
+                            break;
+                        }
+                    }
+                    if (occupied) break;
+                }
+                if (!occupied) {
                     isFull = false;
                     break;
                 }
             }
-            if (isFull) {
-                return true;
-            }
+            if (isFull) return true;
         }
         return false;
     }
 
     public interface OnTetrominoSelectedListener {
         void onTetrominoSelected(MainActivity.Tetromino tetromino);
+    }
+
+    public interface OnTetrominoLongPressListener {
+        void onTetrominoLongPressed(MainActivity.Tetromino tetromino);
     }
 }

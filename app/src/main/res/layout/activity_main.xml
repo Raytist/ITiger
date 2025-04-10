@@ -5,9 +5,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    tools:context=".MainActivity"
-    android:padding="16dp">
+    tools:context=".MainActivity">
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:text="Тетрис"
+        android:textSize="30sp"
+        android:gravity="center|start"
+        android:textColor="@color/white"
+        android:paddingStart="15dp"
+        android:background="@color/table"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
     <androidx.appcompat.widget.AppCompatImageButton
         android:id="@+id/btnPreviousDay"
         android:layout_width="50dp"
@@ -15,6 +25,7 @@
         android:background="@drawable/move_button"
         android:padding="15dp"
         android:scaleType="fitXY"
+        android:layout_marginBottom="5dp"
         android:src="@drawable/baseline_arrow_back_ios_new_24"
         app:layout_constraintBottom_toTopOf="@+id/tetrisView"
         app:layout_constraintStart_toStartOf="@+id/tetrisView" />
@@ -36,6 +47,7 @@
         android:background="@drawable/move_button"
         android:padding="15dp"
         android:scaleType="fitXY"
+        android:layout_marginBottom="5dp"
         android:src="@drawable/baseline_arrow_forward_ios_24"
         app:layout_constraintBottom_toTopOf="@+id/tetrisView"
         app:layout_constraintEnd_toEndOf="@+id/tetrisView" />
@@ -43,7 +55,7 @@
         android:id="@+id/tetrisView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="150dp"
+        android:layout_marginBottom="100dp"
         android:background="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="1:1"
@@ -224,8 +236,10 @@
     <LinearLayout
         android:id="@+id/linearLayout3"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="100dp"
+        android:orientation="vertical"
         android:layout_marginTop="5dp"
+        android:paddingHorizontal="15dp"
         app:layout_constraintEnd_toEndOf="@+id/tetrisView"
         app:layout_constraintStart_toStartOf="@+id/tetrisView"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
@@ -241,6 +255,21 @@
             android:onClick="createNewTetromino"
             android:text="+"
             app:cornerRadius="30dp" />
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnViewWeek"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/move_button"
+            android:gravity="center"
+            android:onClick="viewWeekTetris"
+            android:text="Просмотр недели"
+            app:layout_constraintBottom_toTopOf="@+id/calendarView"
+            app:layout_constraintEnd_toEndOf="@+id/tetrisView"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="UnknownIdInLayout" />
     </LinearLayout>
 
 
