@@ -20,6 +20,8 @@ public class TetrisView extends View {
     private int height = 8; // По умолчанию 8 строк
     private float cellWidth;
     private float cellHeight;
+    private Paint fillPaint;
+    private Paint borderPaint;
     private Paint paint;
     private ArrayList<MainActivity.Tetromino> tetrominos = new ArrayList<>();
     private MainActivity.Tetromino currentTetromino;
@@ -50,7 +52,19 @@ public class TetrisView extends View {
     }
 
     private void init(Context context) {
+        fillPaint = new Paint();
+        fillPaint.setStyle(Paint.Style.FILL);
+
+        // Initialize the main paint object
         paint = new Paint();
+        paint.setStyle(Paint.Style.STROKE);
+
+        // Paint for black border
+        borderPaint = new Paint();
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setColor(Color.BLACK);
+        borderPaint.setStrokeWidth(4f); // Adjust thickness as needed
+
         updateCellDimensions();
         // Инициализация GestureDetector для обработки долгого нажатия
         gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
@@ -114,6 +128,7 @@ public class TetrisView extends View {
         super.onDraw(canvas);
 
         // Рисуем сетку
+        paint = new Paint();
         paint.setColor(Color.LTGRAY);
         paint.setStyle(Paint.Style.STROKE);
         for (int i = 0; i <= width; i++) {
@@ -125,20 +140,62 @@ public class TetrisView extends View {
 
         // Рисуем все тетромино
         for (MainActivity.Tetromino tetromino : tetrominos) {
-            paint.setColor(tetromino.color);
-            paint.setStyle(Paint.Style.FILL);
-            Log.d("TetrisView", "Рисуем тетромино: position=" + tetromino.position + ", shape=" + java.util.Arrays.toString(tetromino.shape));
+            // Сначала рисуем заливку всех клеток тетромино
+            fillPaint.setColor(tetromino.color);
             for (int index : tetromino.shape) {
                 int pos = tetromino.position + index;
                 int row = pos / width;
                 int col = pos % width;
-                Log.d("TetrisView", "  Ячейка: pos=" + pos + ", row=" + row + ", col=" + col);
                 if (row >= 0 && row < height && col >= 0 && col < width) {
-                    canvas.drawRect(col * cellWidth, row * cellHeight,
-                            (col + 1) * cellWidth, (row + 1) * cellHeight, paint);
+                    float left = col * cellWidth;
+                    float top = row * cellHeight;
+                    float right = left + cellWidth;
+                    float bottom = top + cellHeight;
+                    canvas.drawRect(left, top, right, bottom, fillPaint);
+                }
+            }
+
+            // Затем рисуем границы только по внешним краям
+            for (int index : tetromino.shape) {
+                int pos = tetromino.position + index;
+                int row = pos / width;
+                int col = pos % width;
+                if (row >= 0 && row < height && col >= 0 && col < width) {
+                    float left = col * cellWidth;
+                    float top = row * cellHeight;
+                    float right = left + cellWidth;
+                    float bottom = top + cellHeight;
+
+                    // Проверяем соседние клетки и рисуем только те границы, где нет соседей
+                    if (!hasNeighbor(tetromino, pos, -1, 0)) { // слева
+                        canvas.drawLine(left, top, left, bottom, borderPaint);
+                    }
+                    if (!hasNeighbor(tetromino, pos, 1, 0)) { // справа
+                        canvas.drawLine(right, top, right, bottom, borderPaint);
+                    }
+                    if (!hasNeighbor(tetromino, pos, 0, -1)) { // сверху
+                        canvas.drawLine(left, top, right, top, borderPaint);
+                    }
+                    if (!hasNeighbor(tetromino, pos, 0, 1)) { // снизу
+                        canvas.drawLine(left, bottom, right, bottom, borderPaint);
+                    }
                 }
             }
         }
+    }
+
+    // Проверяет, есть ли соседняя клетка в указанном направлении
+    private boolean hasNeighbor(MainActivity.Tetromino tetromino, int pos, int dx, int dy) {
+        int width = this.width;
+        int neighborPos = pos + dx + dy * width;
+
+        // Проверяем, находится ли сосед в пределах тетромино
+        for (int index : tetromino.shape) {
+            if (tetromino.position + index == neighborPos) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

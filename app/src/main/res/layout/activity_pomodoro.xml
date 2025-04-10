@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pomodoro"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#e74c3c"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/pomodoro_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Работа"
+        android:textSize="24sp"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="8dp" />
+
+    <TextView
+        android:id="@+id/pomodoro_cycles"
+        android:layout_width="match_parent"
+        android:textColor="@color/white"
+        android:layout_height="wrap_content"
+        android:text="Циклов: 0"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:paddingBottom="8dp" />
+    <TextView
+        android:id="@+id/pomodoro_timer"
+        android:layout_width="250dp"
+
+        android:layout_height="250dp"
+        android:text="25:00"
+        android:textSize="48sp"
+        android:background="@drawable/cycle"
+        android:gravity="center" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="20dp"
+        android:gravity="center">
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_start_pause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/move_button"
+            android:layout_marginEnd="5dp"
+            android:text="Старт" />
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_reset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:background="@drawable/move_button"
+            android:text="Сброс" />
+    </LinearLayout>
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/btn_accelerate"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:src="@drawable/baseline_access_alarms_24"
+        android:background="@drawable/cycle"
+        android:text="Сброс" />
+
+</LinearLayout>

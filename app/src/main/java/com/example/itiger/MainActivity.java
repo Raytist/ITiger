@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private AppCompatImageButton btnPreviousDay;
     private AppCompatImageButton btnNextDay;
     private TextView tvCurrentDate;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd",new Locale ("ru"));
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", new Locale("ru"));
     private SimpleDateFormat displayDateFormat = new SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault());
     private String formatDateRussian(String dateStr) {
         try {
@@ -59,8 +59,7 @@ public class MainActivity extends AppCompatActivity {
             Calendar cal = Calendar.getInstance();
             cal.setTime(date);
 
-            String[] days = {"Вс", "Пн", "Вт", "Ср",
-                    "Чт", "Пт", "Сб"};
+            String[] days = {"Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"};
             String[] months = {"января", "февраля", "марта", "апреля", "мая", "июня",
                     "июля", "августа", "сентября", "октября", "ноября", "декабря"};
 
@@ -87,12 +86,14 @@ public class MainActivity extends AppCompatActivity {
     private final long FALL_INTERVAL = 500;
     private String selectedDate;
     private static final String PREFS_NAME = "TetrisPrefs";
+    private static final String KEY_POINTS = "Points";
+    private int points = 0;
     private AppCompatImageButton buttonRotate;
     private AppCompatButton buttonUp;
     private AppCompatButton buttonDown;
     private AppCompatButton buttonLeft;
     private AppCompatButton buttonRight;
-    private AppCompatButton buttonViewInfo;
+    private AppCompatImageButton buttonViewInfo;
 
     private boolean isPomodoroRunning = false;
     private boolean isWorkPeriod = true;
@@ -104,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int NOTIFICATION_ID = 1;
 
     private static final int ARCHIVE_REQUEST_CODE = 1;
+    private static final int POMODORO_REQUEST_CODE = 1;
 
     private PomodoroService pomodoroService;
     private boolean isServiceBound = false;
@@ -149,72 +151,25 @@ public class MainActivity extends AppCompatActivity {
     static final String KEY_TETROMINO_DIFFICULTY = "TetrominoDifficulty_";
     static final String KEY_TETROMINO_TIME = "TetrominoTime_";
 
-    private static final String KEY_COMPLETED_TETROMINO_COUNT = "CompletedTetrominoCount";
-    private static final String KEY_COMPLETED_TETROMINO_POSITION = "CompletedTetrominoPosition_";
-    private static final String KEY_COMPLETED_TETROMINO_TYPE = "CompletedTetrominoType_";
-    private static final String KEY_COMPLETED_TETROMINO_ROTATION = "CompletedTetrominoRotation_";
-    private static final String KEY_COMPLETED_TETROMINO_COLOR = "CompletedTetrominoColor_";
-    private static final String KEY_COMPLETED_TETROMINO_TITLE = "CompletedTetrominoTitle_";
-    private static final String KEY_COMPLETED_TETROMINO_DESCRIPTION = "CompletedTetrominoDescription_";
-    private static final String KEY_COMPLETED_TETROMINO_CATEGORY = "CompletedTetrominoCategory_";
-    private static final String KEY_COMPLETED_TETROMINO_DIFFICULTY = "CompletedTetrominoDifficulty_";
-    private static final String KEY_COMPLETED_TETROMINO_TIME = "CompletedTetrominoTime_";
+    static final String KEY_COMPLETED_TETROMINO_COUNT = "CompletedTetrominoCount";
+    static final String KEY_COMPLETED_TETROMINO_POSITION = "CompletedTetrominoPosition_";
+    static final String KEY_COMPLETED_TETROMINO_TYPE = "CompletedTetrominoType_";
+    static final String KEY_COMPLETED_TETROMINO_ROTATION = "CompletedTetrominoRotation_";
+    static final String KEY_COMPLETED_TETROMINO_COLOR = "CompletedTetrominoColor_";
+    static final String KEY_COMPLETED_TETROMINO_TITLE = "CompletedTetrominoTitle_";
+    static final String KEY_COMPLETED_TETROMINO_DESCRIPTION = "CompletedTetrominoDescription_";
+    static final String KEY_COMPLETED_TETROMINO_CATEGORY = "CompletedTetrominoCategory_";
+    static final String KEY_COMPLETED_TETROMINO_DIFFICULTY = "CompletedTetrominoDifficulty_";
+    static final String KEY_COMPLETED_TETROMINO_TIME = "CompletedTetrominoTime_";
 
     private int SELECTED_COLOR;
     private boolean isTipShownInLifecycle = false;
 
     private final String[] timeManagementTips = {
-            "Разделяйте задачи на мелкие части, чтобы они казались менее сложными. Это поможет быстрее начать работу и не откладывать дела.",
-            "Используйте метод Помодоро в приложении: работайте 25 минут, затем делайте 5-минутный перерыв. Это улучшит концентрацию и снизит усталость.",
-            "Создавайте задачи с конкретными категориями в ITiger, чтобы легко находить их позже. Например, разделите их на 'Работа', 'Учеба' и 'Личное'.",
-            "Ставьте приоритеты для задач утром, чтобы сосредоточиться на самом важном. Выполняйте сложные задачи, пока ваш мозг свеж.",
-            "Играйте в Тетрис после завершения задачи, чтобы наградить себя. Это поможет поддерживать мотивацию и сделает процесс планирования увлекательным.",
-            "Оценивайте сложность задач в ITiger от 1 до 5, чтобы понять, сколько времени потребуется. Это поможет лучше распределить свои силы.",
-            "Планируйте не более 3-5 ключевых задач на день, чтобы не перегружать себя. Остальные задачи можно перенести на другой день.",
-            "Используйте архив в ITiger, чтобы отслеживать завершенные задачи. Это даст вам чувство достижения и поможет анализировать продуктивность.",
-            "Делайте короткие перерывы после каждой Помодоро-сессии и играйте в Тетрис. Это расслабит ваш мозг и подготовит его к следующей задаче.",
-            "Устанавливайте реалистичные временные рамки для задач в приложении. Если задача занимает больше 2 часов, разбейте ее на части.",
-            "Создавайте напоминания в ITiger для срочных задач, чтобы не пропустить дедлайны. Это особенно полезно для задач с высоким приоритетом.",
-            "Проверяйте архив задач в конце недели, чтобы оценить свои успехи. Это поможет понять, какие категории задач требуют больше времени.",
-            "Используйте Тетрис как способ переключиться между задачами. После завершения сложной задачи сыграйте короткую игру, чтобы снять стресс.",
-            "Группируйте похожие задачи в ITiger, чтобы выполнять их подряд. Например, сначала сделайте все звонки, а затем переходите к письмам.",
-            "Начинайте день с самой сложной задачи, пока у вас много энергии. Это называется 'съесть лягушку', и это повышает продуктивность.",
-            "Добавляйте описания к задачам в ITiger, чтобы помнить детали. Это особенно полезно для задач, которые вы откладываете на потом.",
-            "Используйте цветовую маркировку задач в Тетрисе, чтобы визуально различать их. Например, красный для срочных, синий для долгосрочных.",
-            "Планируйте задачи накануне вечером, чтобы утром сразу приступить к делу. Это сэкономит время и снизит утренний стресс.",
-            "Ставьте таймер Помодоро в ITiger для каждой задачи, чтобы не отвлекаться. После 4 сессий делайте длинный перерыв на 15-30 минут.",
-            "Оценивайте, сколько времени вы тратите на задачи, и записывайте это в ITiger. Это поможет лучше планировать в будущем.",
-            "Держите список задач в ITiger коротким, чтобы не чувствовать перегрузку. Если задач слишком много, перенесите часть в архив.",
-            "Используйте Тетрис как способ снять напряжение после долгой работы. Короткая игра поможет вам перезагрузиться перед следующей задачей.",
-            "Создавайте задачи с конкретными действиями, а не общими целями. Например, вместо 'Учить английский' напишите 'Выучить 10 новых слов'.",
-            "Проверяйте уведомления в ITiger, чтобы не забывать о задачах. Это особенно полезно для задач с жесткими дедлайнами.",
-            "Делайте перерывы каждые 90 минут, чтобы избежать выгорания. В это время сыграйте в Тетрис или просто отдохните.",
-            "Используйте категорию задач в ITiger, чтобы понять, на что уходит больше времени. Это поможет оптимизировать ваш день.",
-            "Ставьте небольшие цели в Тетрисе, чтобы поддерживать мотивацию. Например, завершите 3 линии перед началом следующей задачи.",
-            "Планируйте задачи в зависимости от вашего уровня энергии в течение дня. Сложные задачи делайте утром, а легкие оставьте на вечер.",
-            "Добавляйте заметки к задачам в ITiger, чтобы не забывать важные детали. Это особенно полезно для долгосрочных проектов.",
-            "Используйте архив ITiger для анализа своих привычек. Посмотрите, какие задачи вы часто откладываете, и попробуйте их упростить.",
-            "Настраивайте сложность задач в ITiger, чтобы лучше оценивать их выполнение. Например, сложность 5 может означать, что задача займет весь день.",
-            "Делайте утреннюю разминку перед началом работы, чтобы зарядиться энергией. После этого сразу открывайте ITiger и начинайте с главной задачи.",
-            "Используйте Тетрис как способ отметить завершение недели. Сыграйте длинную игру, чтобы расслабиться и подвести итоги.",
-            "Создавайте задачи с четкими дедлайнами в ITiger, чтобы не откладывать их. Это поможет вам оставаться на правильном пути.",
-            "Проверяйте, сколько Помодоро-сессий ушло на задачу, и записывайте это в ITiger. Это поможет вам лучше планировать похожие задачи.",
-            "Ставьте напоминания в ITiger для задач, которые нужно сделать в определенное время. Например, 'Позвонить коллеге в 14:00'.",
-            "Используйте Тетрис как способ отвлечься от сложных задач. После 25 минут работы сыграйте короткую игру, чтобы переключиться.",
-            "Разделяйте задачи по времени выполнения в ITiger: короткие (до 30 минут) и длинные (более часа). Это поможет лучше управлять временем.",
-            "Планируйте отдых после каждой крупной задачи, чтобы восстановить силы. В это время сыграйте в Тетрис или просто расслабьтесь.",
-            "Добавляйте мотивационные заметки к задачам в ITiger, чтобы вдохновляться. Например, 'Сделай это, и ты станешь ближе к своей цели!'.",
-            "Используйте архив ITiger, чтобы отслеживать прогресс за месяц. Это покажет, сколько задач вы выполнили и где можно улучшиться.",
-            "Ставьте таймер Помодоро в ITiger даже для небольших задач, чтобы оставаться сосредоточенным. Это поможет избежать отвлечений.",
-            "Создавайте задачи с конкретным результатом, чтобы видеть прогресс. Например, вместо 'Работать над проектом' напишите 'Написать 500 слов'.",
-            "Проверяйте уведомления в ITiger перед началом дня, чтобы вспомнить, что нужно сделать. Это поможет вам не упустить важное.",
-            "Делайте длинные перерывы после 4 Помодоро-сессий и играйте в Тетрис. Это даст вашему мозгу отдохнуть и зарядит энергией.",
-            "Используйте категории в ITiger, чтобы разделять задачи по проектам. Например, создайте категории 'Проект А' и 'Проект Б'.",
-            "Ставьте небольшие цели в ITiger, чтобы чувствовать прогресс. Например, завершите 2 задачи до обеда, а потом сыграйте в Тетрис.",
-            "Планируйте задачи с учетом ваших пиков продуктивности в течение дня. Если вы продуктивны утром, делайте сложные задачи в это время.",
-            "Добавляйте описание к каждой задаче в ITiger, чтобы помнить, зачем она нужна. Это поможет вам оставаться мотивированным.",
-            "Используйте Тетрис как способ отметить завершение дня. После выполнения всех задач сыграйте игру, чтобы расслабиться.",
-            "Проверяйте архив ITiger в конце дня, чтобы увидеть, что вы сделали. Это даст вам чувство удовлетворения и поможет планировать следующий день."
+            "Планируйте свой день заранее.",
+            "Ставьте приоритеты задач.",
+            "Используйте технику Pomodoro для повышения продуктивности.",
+            "Делайте короткие перерывы каждые 25 минут работы."
     };
 
     private final Runnable fallRunnable = new Runnable() {
@@ -237,17 +192,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Создаём канал уведомлений
         createNotificationChannel();
 
-        // Получаем выбранную дату из Intent
         Intent intent = getIntent();
         selectedDate = intent.getStringExtra("selectedDate");
         if (selectedDate == null) {
             selectedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
         }
 
-        // Инициализируем UI-компоненты
         tetrisView = findViewById(R.id.tetrisView);
         if (tetrisView == null) {
             Log.e("MainActivity", "TetrisView not found in layout");
@@ -268,7 +220,7 @@ public class MainActivity extends AppCompatActivity {
         btnNextDay.setOnClickListener(v -> navigateToAdjacentDay(1));
 
         updateDateDisplay();
-        // Проверяем разрешения на уведомления
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -280,13 +232,14 @@ public class MainActivity extends AppCompatActivity {
         isTipShownInLifecycle = false;
         SELECTED_COLOR = ContextCompat.getColor(this, android.R.color.holo_orange_dark);
 
-        // Устанавливаем слушатель для TetrisView
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        points = prefs.getInt(KEY_POINTS, 0); // Load initial points
+
         tetrisView.setOnTetrominoSelectedListener(tetromino -> {
             if (currentTetromino == tetromino) {
                 currentTetromino.color = currentTetromino.originalColor;
                 currentTetromino = null;
                 isFalling = true;
-                Log.d("MainActivity", "Тетромино сброшено");
             } else {
                 if (currentTetromino != null) {
                     currentTetromino.color = currentTetromino.originalColor;
@@ -294,23 +247,18 @@ public class MainActivity extends AppCompatActivity {
                 currentTetromino = tetromino;
                 currentTetromino.color = SELECTED_COLOR;
                 isFalling = false;
-                Log.d("MainActivity", "Тетромино выбрано: position=" + tetromino.position);
             }
             tetrisView.setCurrentTetromino(currentTetromino);
             updateControlButtonsVisibility();
             tetrisView.invalidate();
-            Log.d("MainActivity", "Invalidate вызван после выбора");
         });
 
-        // Восстанавливаем состояние игры
         restoreGameState();
 
-        // Создаём новое тетромино, если список пуст
         if (tetrominos.isEmpty()) {
             createNewTetromino(null);
         }
 
-        // Запускаем падение тетромино
         fallHandler.post(fallRunnable);
     }
 
@@ -329,21 +277,16 @@ public class MainActivity extends AppCompatActivity {
             isServiceBound = false;
         }
     }
+
     private void navigateToAdjacentDay(int daysToAdd) {
         try {
-            // Сохраняем состояние текущей (предыдущей) даты перед изменением
             saveGameState();
-
-            // Теперь изменяем дату
             Date currentDate = dateFormat.parse(selectedDate);
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(currentDate);
             calendar.add(Calendar.DAY_OF_YEAR, daysToAdd);
-
             String newDate = dateFormat.format(calendar.getTime());
             selectedDate = newDate;
-
-            // Обновляем данные для новой даты
             restoreGameState();
             updateDateDisplay();
         } catch (ParseException e) {
@@ -388,17 +331,35 @@ public class MainActivity extends AppCompatActivity {
 
     public void openArchive(View view) {
         Intent intent = new Intent(this, ArchiveActivity.class);
-        startActivityForResult(intent, 1);
+        startActivityForResult(intent, ARCHIVE_REQUEST_CODE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1 && resultCode == RESULT_OK) {
+        if (requestCode == ARCHIVE_REQUEST_CODE && resultCode == RESULT_OK) {
             NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_bottom_nuv);
-            navController.navigate(R.id.navigation_dashboard); // Перезагрузка фрагмента
+            navController.navigate(R.id.navigation_dashboard);
+        } else if (requestCode == POMODORO_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            if (data.getBooleanExtra("task_completed", false)) {
+                if (currentTetromino != null) {
+                    completedTetrominos.add(currentTetromino);
+                    tetrominos.remove(currentTetromino);
+                    currentTetromino = null;
+                    isFalling = true;
+                    if (tetrisView != null) {
+                        tetrisView.setTetrominos(tetrominos);
+                        tetrisView.setCurrentTetromino(currentTetromino);
+                        updateControlButtonsVisibility();
+                        tetrisView.invalidate();
+                    }
+                    awardPoints();
+                    saveGameState();
+                }
+            }
         }
     }
+
     static class TetrominoWithDate implements java.io.Serializable {
         Tetromino tetromino;
         String date;
@@ -482,7 +443,6 @@ public class MainActivity extends AppCompatActivity {
         Set<String> datesWithData = new HashSet<>(prefs.getStringSet("DatesWithData", new HashSet<>()));
         Set<String> modifiedDates = new HashSet<>(prefs.getStringSet(KEY_MODIFIED_DATES, new HashSet<>()));
 
-        // Проверяем, были ли изменения в текущих или завершённых тетромино
         int prevTetrominoCount = prefs.getInt(datePrefix + KEY_TETROMINO_COUNT, 0);
         int prevCompletedCount = prefs.getInt(datePrefix + KEY_COMPLETED_TETROMINO_COUNT, 0);
         if (prevTetrominoCount != tetrominos.size() || prevCompletedCount != completedTetrominos.size()) {
@@ -497,6 +457,7 @@ public class MainActivity extends AppCompatActivity {
         }
         editor.putStringSet("DatesWithData", datesWithData);
         editor.putStringSet(KEY_MODIFIED_DATES, modifiedDates);
+        editor.putInt(KEY_POINTS, points); // Save points
 
         editor.apply();
     }
@@ -551,6 +512,8 @@ public class MainActivity extends AppCompatActivity {
                     title, description, category, difficulty, timeToComplete);
             completedTetrominos.add(tetromino);
         }
+
+        points = prefs.getInt(KEY_POINTS, 0); // Restore points
 
         if (tetrisView != null) {
             tetrisView.setTetrominos(tetrominos);
@@ -620,10 +583,12 @@ public class MainActivity extends AppCompatActivity {
 
         return newPosition;
     }
+
     public void viewWeekTetris(View view) {
         Intent intent = new Intent(this, WeekTetrisActivity.class);
         startActivity(intent);
     }
+
     public static int[] generateShapeFromTimeAndDifficulty(int timeInSeconds, int difficulty, int rotation) {
         final int SECONDS_PER_COLUMN = 2 * 60 * 60;
         int columns = (int) Math.ceil((double) timeInSeconds / SECONDS_PER_COLUMN);
@@ -783,6 +748,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint({"MissingInflatedId", "LocalSuppress"})
     public void viewTetrominoInfo(View view) {
         if (currentTetromino == null) {
             Toast.makeText(this, "Тетромино не выбрано", Toast.LENGTH_SHORT).show();
@@ -799,16 +765,9 @@ public class MainActivity extends AppCompatActivity {
         TextView textCategory = dialogView.findViewById(R.id.text_category);
         TextView textDifficulty = dialogView.findViewById(R.id.text_difficulty);
         TextView textTime = dialogView.findViewById(R.id.text_time);
-        TextView pomodoroStatus = dialogView.findViewById(R.id.pomodoro_status);
-        TextView pomodoroTimer = dialogView.findViewById(R.id.pomodoro_timer);
-        TextView pomodoroCycles = dialogView.findViewById(R.id.pomodoro_cycles);
-        Button btnStartPause = dialogView.findViewById(R.id.btn_start_pause);
-        Button btnReset = dialogView.findViewById(R.id.btn_reset);
         Button btnTogglePomodoro = dialogView.findViewById(R.id.btn_toggle_pomodoro);
-        LinearLayout pomodoroContainer = dialogView.findViewById(R.id.pomodoro_container);
 
         textDescription.setMovementMethod(new android.text.method.ScrollingMovementMethod());
-
         textTitle.setText(currentTetromino.title);
         textDescription.setText(currentTetromino.description);
         textCategory.setText("Категория: " + currentTetromino.category);
@@ -816,168 +775,11 @@ public class MainActivity extends AppCompatActivity {
         int timeInMinutes = currentTetromino.timeToComplete / 60;
         textTime.setText("Время: " + timeInMinutes + " минут");
 
-        final boolean[] isPomodoroVisible = {false};
-        btnTogglePomodoro.setText("Показать Pomodoro");
         btnTogglePomodoro.setOnClickListener(v -> {
-            if (isPomodoroVisible[0]) {
-                pomodoroContainer.setVisibility(View.GONE);
-                btnTogglePomodoro.setText("Показать Pomodoro");
-            } else {
-                pomodoroContainer.setVisibility(View.VISIBLE);
-                btnTogglePomodoro.setText("Скрыть Pomodoro");
-            }
-            isPomodoroVisible[0] = !isPomodoroVisible[0];
-        });
-
-        long totalWorkTime = currentTetromino.timeToComplete * 1000L;
-        final long DEFAULT_WORK_DURATION = 25 * 60 * 1000L;
-        final long DEFAULT_BREAK_DURATION = 5 * 60 * 1000L;
-        final int[] totalCycles = new int[1];
-        final long[] workDurationForTimer = new long[1];
-        final int[] workCyclesCompleted = new int[1];
-        final long totalTime = currentTetromino.timeToComplete * 1000L;
-        final long[] remainingWorkTime = new long[1];
-
-        final int TIME_ACCELERATION_FACTOR = 10;
-        final long UPDATE_INTERVAL = 1000 / TIME_ACCELERATION_FACTOR;
-
-        if (totalWorkTime <= DEFAULT_WORK_DURATION) {
-            totalCycles[0] = 1;
-            workDurationForTimer[0] = totalWorkTime;
-            remainingWorkTime[0] = 0;
-        } else {
-            long fullCycleDuration = DEFAULT_WORK_DURATION + DEFAULT_BREAK_DURATION;
-            totalCycles[0] = (int) (totalWorkTime / fullCycleDuration);
-            long remainingTimeAfterFullCycles = totalWorkTime % fullCycleDuration;
-            if (remainingTimeAfterFullCycles > 0) {
-                remainingWorkTime[0] = remainingTimeAfterFullCycles;
-                totalCycles[0]++;
-            } else {
-                remainingWorkTime[0] = 0;
-            }
-            workDurationForTimer[0] = DEFAULT_WORK_DURATION;
-        }
-
-        workCyclesCompleted[0] = 0;
-        if (isServiceBound && pomodoroService != null && pomodoroService.isRunning()) {
-            workCyclesCompleted[0] = pomodoroService.getWorkCyclesCompleted();
-        }
-        pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
-
-        if (!isPomodoroRunning) {
-            timeLeftInMillis = workDurationForTimer[0];
-            isWorkPeriod = true;
-            int totalMinutes = (int) (totalTime / 1000) / 60;
-            int totalSeconds = (int) (totalTime / 1000) % 60;
-            pomodoroTimer.setText(String.format("%02d:%02d", totalMinutes, totalSeconds));
-        } else {
-            int minutes = (int) (timeLeftInMillis / 1000) / 60;
-            int seconds = (int) (timeLeftInMillis / 1000) % 60;
-            pomodoroTimer.setText(String.format("%02d:%02d", minutes, seconds));
-        }
-
-        final Handler timerHandler = new Handler(Looper.getMainLooper());
-        final Runnable timerRunnable = new Runnable() {
-            @Override
-            public void run() {
-                syncWithService();
-                if (isPomodoroRunning && isServiceBound && pomodoroService != null) {
-                    workCyclesCompleted[0] = pomodoroService.getWorkCyclesCompleted();
-                    pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
-                    pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
-                    btnStartPause.setText("Пауза");
-                    btnReset.setEnabled(true);
-                    updatePomodoroTimerText(pomodoroTimer);
-                } else {
-                    if (timeLeftInMillis <= 0 || timeLeftInMillis == workDurationForTimer[0]) {
-                        pomodoroStatus.setText("Работа");
-                        btnStartPause.setText("Старт");
-                        btnReset.setEnabled(false);
-                        int totalMinutes = (int) (totalTime / 1000) / 60;
-                        int totalSeconds = (int) (totalTime / 1000) % 60;
-                        pomodoroTimer.setText(String.format("%02d:%02d", totalMinutes, totalSeconds));
-                    } else {
-                        pomodoroStatus.setText(isWorkPeriod ? "Работа (остановлено)" : "Отдых (остановлено)");
-                        btnStartPause.setText("Продолжить");
-                        btnReset.setEnabled(true);
-                        updatePomodoroTimerText(pomodoroTimer);
-                    }
-                    pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
-                }
-                timerHandler.postDelayed(this, UPDATE_INTERVAL);
-            }
-        };
-
-        if (!isPomodoroRunning) {
-            pomodoroStatus.setText("Работа");
-            btnStartPause.setText("Старт");
-            btnReset.setEnabled(false);
-        } else {
-            pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
-            btnStartPause.setText("Пауза");
-            btnReset.setEnabled(true);
-        }
-        timerHandler.post(timerRunnable);
-
-        btnStartPause.setOnClickListener(v -> {
-            if (!isPomodoroRunning) {
-                Intent serviceIntent = new Intent(this, PomodoroService.class);
-                serviceIntent.putExtra("tetromino", currentTetromino);
-                if (timeLeftInMillis == workDurationForTimer[0] || timeLeftInMillis <= 0) {
-                    timeLeftInMillis = workDurationForTimer[0];
-                    isWorkPeriod = true;
-                }
-                serviceIntent.putExtra("timeLeft", timeLeftInMillis);
-                serviceIntent.putExtra("isWorkPeriod", isWorkPeriod);
-                startForegroundService(serviceIntent);
-                bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-                isPomodoroRunning = true;
-                pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
-                btnStartPause.setText("Пауза");
-                btnReset.setEnabled(true);
-                int minutes = (int) (timeLeftInMillis / 1000) / 60;
-                int seconds = (int) (timeLeftInMillis / 1000) % 60;
-                pomodoroTimer.setText(String.format("%02d:%02d", minutes, seconds));
-            } else if (isServiceBound && pomodoroService != null) {
-                if (isPomodoroRunning) {
-                    timeLeftInMillis = pomodoroService.getTimeLeftInMillis();
-                    isWorkPeriod = pomodoroService.isWorkPeriod();
-                    pomodoroService.pauseTimer();
-                    isPomodoroRunning = false;
-                    pomodoroStatus.setText(isWorkPeriod ? "Работа (остановлено)" : "Отдых (остановлено)");
-                    btnStartPause.setText("Продолжить");
-                    btnReset.setEnabled(true);
-                    updatePomodoroTimerText(pomodoroTimer);
-                } else {
-                    pomodoroService.resumeTimer(timeLeftInMillis, isWorkPeriod);
-                    isPomodoroRunning = true;
-                    pomodoroStatus.setText(isWorkPeriod ? "Работа" : "Отдых");
-                    btnStartPause.setText("Пауза");
-                    btnReset.setEnabled(true);
-                    updatePomodoroTimerText(pomodoroTimer);
-                }
-            }
-        });
-
-        btnReset.setOnClickListener(v -> {
-            if (isServiceBound && pomodoroService != null) {
-                pomodoroService.resetTimer();
-                unbindService(serviceConnection);
-                isServiceBound = false;
-            }
-            stopService(new Intent(this, PomodoroService.class));
-            cancelNotification();
-            isPomodoroRunning = false;
-            timeLeftInMillis = workDurationForTimer[0];
-            isWorkPeriod = true;
-            workCyclesCompleted[0] = 0;
-            pomodoroCycles.setText(workCyclesCompleted[0] + "/" + totalCycles[0]);
-            pomodoroStatus.setText("Работа");
-            btnStartPause.setText("Старт");
-            btnReset.setEnabled(false);
-            int totalMinutes = (int) (totalTime / 1000) / 60;
-            int totalSeconds = (int) (totalTime / 1000) % 60;
-            pomodoroTimer.setText(String.format("%02d:%02d", totalMinutes, totalSeconds));
+            Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
+            intent.putExtra("pomodoro_duration", (long) currentTetromino.timeToComplete * 1000);
+            intent.putExtra("tetromino_title", currentTetromino.title);
+            startActivityForResult(intent, POMODORO_REQUEST_CODE);
         });
 
         builder.setNegativeButton("Удалить", (dialog, which) -> {
@@ -986,7 +788,6 @@ public class MainActivity extends AppCompatActivity {
             cancelNotification();
             currentTetromino = null;
             isFalling = true;
-            isPomodoroRunning = false;
             if (tetrisView != null) {
                 tetrisView.setTetrominos(tetrominos);
                 tetrisView.setCurrentTetromino(currentTetromino);
@@ -999,36 +800,38 @@ public class MainActivity extends AppCompatActivity {
         builder.setNeutralButton("Завершить", (dialog, which) -> {
             completedTetrominos.add(currentTetromino);
             tetrominos.remove(currentTetromino);
-            stopService(new Intent(this, PomodoroService.class));
-            cancelNotification();
             currentTetromino = null;
             isFalling = true;
-            isPomodoroRunning = false;
             if (tetrisView != null) {
                 tetrisView.setTetrominos(tetrominos);
                 tetrisView.setCurrentTetromino(currentTetromino);
                 updateControlButtonsVisibility();
                 tetrisView.invalidate();
             }
+            awardPoints();
             saveGameState();
             dialog.dismiss();
         });
 
-        builder.setPositiveButton("ОК", (dialog, which) -> {
-            timerHandler.removeCallbacks(timerRunnable);
-            dialog.dismiss();
-        });
+        builder.setPositiveButton("ОК", (dialog, which) -> dialog.dismiss());
 
         AlertDialog dialog = builder.create();
-        dialog.setOnDismissListener(d -> timerHandler.removeCallbacks(timerRunnable));
         dialog.show();
     }
 
-    private void updatePomodoroTimerText(TextView timer) {
-        int minutes = (int) (timeLeftInMillis / 1000) / 60;
-        int seconds = (int) (timeLeftInMillis / 1000) % 60;
-        String timeFormatted = String.format("%02d:%02d", minutes, seconds);
-        timer.setText(timeFormatted);
+    private boolean checkFullColumn() {
+        return tetrisView != null && tetrisView.checkFullColumn();
+    }
+
+    private void awardPoints() {
+        if (checkFullColumn()) {
+            points += 1;
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(KEY_POINTS, points);
+            editor.apply();
+            showTimeManagementTip(); // Show tip with updated points
+        }
     }
 
     public void rotateTetromino(View view) {
@@ -1163,7 +966,7 @@ public class MainActivity extends AppCompatActivity {
             int row = pos / WIDTH;
             int col = pos % WIDTH;
             if (col < 0) {
-                newPosition = currentTetromino.position + (WIDTH - 1); // Обёртывание влево
+                newPosition = currentTetromino.position + (WIDTH - 1);
                 pos = newPosition + index;
                 col = pos % WIDTH;
             }
@@ -1197,7 +1000,7 @@ public class MainActivity extends AppCompatActivity {
             int row = pos / WIDTH;
             int col = pos % WIDTH;
             if (col >= WIDTH) {
-                newPosition = currentTetromino.position - (WIDTH - 1); // Обёртывание вправо
+                newPosition = currentTetromino.position - (WIDTH - 1);
                 pos = newPosition + index;
                 col = pos % WIDTH;
             }
@@ -1275,7 +1078,6 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.d("MainActivity", "Движение вниз: newPosition=" + newPosition);
     }
-
 
     private void moveTetrominoDown(Tetromino tetromino) {
         int newPosition = tetromino.position + WIDTH;
@@ -1356,6 +1158,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+
     private boolean isPartOfTetromino(Tetromino tetromino, int position) {
         for (int index : tetromino.shape) {
             if (tetromino.position + index == position) {
@@ -1375,9 +1178,11 @@ public class MainActivity extends AppCompatActivity {
         int tipIndex = random.nextInt(timeManagementTips.length);
         String tip = timeManagementTips[tipIndex];
 
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        points = prefs.getInt(KEY_POINTS, 0);
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Совет по тайм-менеджменту");
-        builder.setMessage("Столбец заполнен!\n\n" + tip);
         builder.setPositiveButton("ОК", (dialog, which) -> dialog.dismiss());
         builder.setCancelable(false);
         AlertDialog dialog = builder.create();
