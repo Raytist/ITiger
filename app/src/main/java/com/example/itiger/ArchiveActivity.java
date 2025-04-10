@@ -11,6 +11,8 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -34,11 +36,13 @@ public class ArchiveActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.fragment_dashboard);
+        // Используем правильную разметку для активити, а не фрагмента
+        setContentView(R.layout.activity_archive); // Предполагается, что вы создадите activity_archive.xml
 
         listView = findViewById(R.id.listViewArchive);
         if (listView == null) {
             Log.e("ArchiveActivity", "ListView with id 'listViewArchive' not found in layout");
+            Toast.makeText(this, "Ошибка: ListView не найден", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -51,7 +55,7 @@ public class ArchiveActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
 
         listView.setOnItemClickListener((parent, view, position, id) -> {
-            Log.d("ArchiveActivity", "Item clicked at position: " + position);
+            Log.d("ArchiveActivity", "Item clicked at position: " + position + ", id: " + id);
             showDeleteConfirmationDialog(position);
         });
     }
@@ -116,6 +120,10 @@ public class ArchiveActivity extends AppCompatActivity {
     }
 
     private void showDeleteConfirmationDialog(final int position) {
+        if (isFinishing() || isDestroyed()) {
+            Log.d("ArchiveActivity", "Cannot show dialog, activity is finishing or destroyed");
+            return;
+        }
         Log.d("ArchiveActivity", "Showing delete confirmation dialog for position: " + position);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Удалить элемент");
@@ -124,6 +132,7 @@ public class ArchiveActivity extends AppCompatActivity {
             Log.d("ArchiveActivity", "Confirmed deletion at position: " + position);
             archivedTetrominos.remove(position);
             adapter.notifyDataSetChanged();
+            Log.d("ArchiveActivity", "List updated, new size: " + archivedTetrominos.size());
             saveUpdatedArchive();
             dialog.dismiss();
         });
@@ -131,9 +140,11 @@ public class ArchiveActivity extends AppCompatActivity {
             Log.d("ArchiveActivity", "Cancelled deletion");
             dialog.dismiss();
         });
-        AlertDialog dialog = builder.create();
-        dialog.show();
-        Log.d("ArchiveActivity", "Dialog should be visible now");
+        runOnUiThread(() -> {
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            Log.d("ArchiveActivity", "Dialog should be visible now");
+        });
     }
 
     private void saveUpdatedArchive() {
@@ -228,6 +239,17 @@ public class ArchiveActivity extends AppCompatActivity {
             textTime.setText("Время: " + timeInMinutes + " минут");
 
             return convertView;
+        }
+    }
+
+    // Вспомогательный класс для сериализации
+    public static class TetrominoWithDate implements java.io.Serializable {
+        Tetromino tetromino;
+        String date;
+
+        TetrominoWithDate(Tetromino tetromino, String date) {
+            this.tetromino = tetromino;
+            this.date = date;
         }
     }
 }

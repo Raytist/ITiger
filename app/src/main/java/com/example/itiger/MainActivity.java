@@ -266,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
         tvCurrentDate = findViewById(R.id.tvCurrentDate);
         btnPreviousDay.setOnClickListener(v -> navigateToAdjacentDay(-1));
         btnNextDay.setOnClickListener(v -> navigateToAdjacentDay(1));
+
         updateDateDisplay();
         // Проверяем разрешения на уведомления
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -285,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
                 currentTetromino.color = currentTetromino.originalColor;
                 currentTetromino = null;
                 isFalling = true;
+                Log.d("MainActivity", "Тетромино сброшено");
             } else {
                 if (currentTetromino != null) {
                     currentTetromino.color = currentTetromino.originalColor;
@@ -292,10 +294,12 @@ public class MainActivity extends AppCompatActivity {
                 currentTetromino = tetromino;
                 currentTetromino.color = SELECTED_COLOR;
                 isFalling = false;
+                Log.d("MainActivity", "Тетромино выбрано: position=" + tetromino.position);
             }
             tetrisView.setCurrentTetromino(currentTetromino);
             updateControlButtonsVisibility();
             tetrisView.invalidate();
+            Log.d("MainActivity", "Invalidate вызван после выбора");
         });
 
         // Восстанавливаем состояние игры
@@ -1147,19 +1151,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void moveLeft(View view) {
-        if (currentTetromino == null) return;
+        if (currentTetromino == null) {
+            Log.d("MainActivity", "Тетромино не выбрано для движения влево");
+            Toast.makeText(this, "Сначала выберите тетромино", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        int currentRow = currentTetromino.position / WIDTH;
-        int currentCol = currentTetromino.position % WIDTH;
-
-        int newCol = (currentCol - 1 + WIDTH) % WIDTH;
-        int newPosition = currentRow * WIDTH + newCol;
-
+        int newPosition = currentTetromino.position - 1;
         for (int index : currentTetromino.shape) {
             int pos = newPosition + index;
             int row = pos / WIDTH;
-            if (row < 0 || row >= HEIGHT) {
-                Log.d("MainActivity", "Нельзя двигаться влево: выходит за вертикальные границы на позиции " + pos);
+            int col = pos % WIDTH;
+            if (col < 0) {
+                newPosition = currentTetromino.position + (WIDTH - 1); // Обёртывание влево
+                pos = newPosition + index;
+                col = pos % WIDTH;
+            }
+            if (row < 0 || row >= HEIGHT || col >= WIDTH) {
+                Log.d("MainActivity", "Нельзя двигаться влево: выходит за границы на позиции " + pos);
                 return;
             }
             if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
@@ -1173,26 +1182,27 @@ public class MainActivity extends AppCompatActivity {
             tetrisView.invalidate();
         }
         Log.d("MainActivity", "Движение влево: newPosition=" + newPosition);
-
-        if (tetrisView.checkFullColumn()) {
-            showTimeManagementTip();
-        }
     }
 
     public void moveRight(View view) {
-        if (currentTetromino == null) return;
+        if (currentTetromino == null) {
+            Log.d("MainActivity", "Тетромино не выбрано для движения вправо");
+            Toast.makeText(this, "Сначала выберите тетромино", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        int currentRow = currentTetromino.position / WIDTH;
-        int currentCol = currentTetromino.position % WIDTH;
-
-        int newCol = (currentCol + 1) % WIDTH;
-        int newPosition = currentRow * WIDTH + newCol;
-
+        int newPosition = currentTetromino.position + 1;
         for (int index : currentTetromino.shape) {
             int pos = newPosition + index;
             int row = pos / WIDTH;
-            if (row < 0 || row >= HEIGHT) {
-                Log.d("MainActivity", "Нельзя двигаться вправо: выходит за вертикальные границы на позиции " + pos);
+            int col = pos % WIDTH;
+            if (col >= WIDTH) {
+                newPosition = currentTetromino.position - (WIDTH - 1); // Обёртывание вправо
+                pos = newPosition + index;
+                col = pos % WIDTH;
+            }
+            if (row < 0 || row >= HEIGHT || col < 0) {
+                Log.d("MainActivity", "Нельзя двигаться вправо: выходит за границы на позиции " + pos);
                 return;
             }
             if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
@@ -1206,20 +1216,22 @@ public class MainActivity extends AppCompatActivity {
             tetrisView.invalidate();
         }
         Log.d("MainActivity", "Движение вправо: newPosition=" + newPosition);
-
-        if (tetrisView.checkFullColumn()) {
-            showTimeManagementTip();
-        }
     }
 
     public void moveUp(View view) {
-        if (currentTetromino == null) return;
+        if (currentTetromino == null) {
+            Log.d("MainActivity", "Тетромино не выбрано для движения вверх");
+            Toast.makeText(this, "Сначала выберите тетромино", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         int newPosition = currentTetromino.position - WIDTH;
         for (int index : currentTetromino.shape) {
             int pos = newPosition + index;
             int row = pos / WIDTH;
+            int col = pos % WIDTH;
             if (row < 0) {
-                Log.d("MainActivity", "Нельзя двигаться вверх: верхняя граница");
+                Log.d("MainActivity", "Нельзя двигаться вверх: выходит за границы на позиции " + pos);
                 return;
             }
             if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
@@ -1227,25 +1239,28 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
         }
+
         currentTetromino.position = newPosition;
         if (tetrisView != null) {
             tetrisView.invalidate();
         }
         Log.d("MainActivity", "Движение вверх: newPosition=" + newPosition);
-
-        if (tetrisView.checkFullColumn()) {
-            showTimeManagementTip();
-        }
     }
 
     public void moveDown(View view) {
-        if (currentTetromino == null) return;
+        if (currentTetromino == null) {
+            Log.d("MainActivity", "Тетромино не выбрано для движения вниз");
+            Toast.makeText(this, "Сначала выберите тетромино", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         int newPosition = currentTetromino.position + WIDTH;
         for (int index : currentTetromino.shape) {
             int pos = newPosition + index;
             int row = pos / WIDTH;
+            int col = pos % WIDTH;
             if (row >= HEIGHT) {
-                Log.d("MainActivity", "Нельзя двигаться вниз: нижняя граница");
+                Log.d("MainActivity", "Нельзя двигаться вниз: выходит за границы на позиции " + pos);
                 return;
             }
             if (isPositionOccupied(pos) && !isPartOfTetromino(currentTetromino, pos)) {
@@ -1253,16 +1268,14 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
         }
+
         currentTetromino.position = newPosition;
         if (tetrisView != null) {
             tetrisView.invalidate();
         }
         Log.d("MainActivity", "Движение вниз: newPosition=" + newPosition);
-
-        if (tetrisView.checkFullColumn()) {
-            showTimeManagementTip();
-        }
     }
+
 
     private void moveTetrominoDown(Tetromino tetromino) {
         int newPosition = tetromino.position + WIDTH;

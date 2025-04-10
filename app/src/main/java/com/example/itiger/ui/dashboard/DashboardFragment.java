@@ -10,6 +10,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.example.itiger.R;
@@ -51,9 +52,10 @@ public class DashboardFragment extends Fragment {
         listView.setAdapter(adapter);
         adapter.notifyDataSetChanged(); // Уведомляем адаптер о данных
 
-        // Добавляем обработчик кликов, если нужно (например, для удаления)
+        // Добавляем обработчик кликов для показа диалога удаления
         listView.setOnItemClickListener((parent, view, position, id) -> {
             Log.d("DashboardFragment", "Clicked item at position: " + position);
+            showDeleteConfirmationDialog(position);
         });
 
         return root;
@@ -116,6 +118,72 @@ public class DashboardFragment extends Fragment {
             }
         }
         return shape;
+    }
+
+    private void showDeleteConfirmationDialog(final int position) {
+        if (getActivity() == null || getActivity().isFinishing() || getActivity().isDestroyed()) {
+            Log.d("DashboardFragment", "Cannot show dialog, activity is null or finishing");
+            return;
+        }
+        Log.d("DashboardFragment", "Showing delete confirmation dialog for position: " + position);
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
+        builder.setTitle("Удалить элемент");
+        builder.setMessage("Вы уверены, что хотите удалить этот элемент из архива?");
+        builder.setPositiveButton("Да", (dialog, which) -> {
+            Log.d("DashboardFragment", "Confirmed deletion at position: " + position);
+            archivedTetrominos.remove(position);
+            adapter.notifyDataSetChanged();
+            Log.d("DashboardFragment", "List updated, new size: " + archivedTetrominos.size());
+            saveUpdatedArchive();
+            dialog.dismiss();
+        });
+        builder.setNegativeButton("Нет", (dialog, which) -> {
+            Log.d("DashboardFragment", "Cancelled deletion");
+            dialog.dismiss();
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        Log.d("DashboardFragment", "Dialog should be visible now");
+    }
+
+    private void saveUpdatedArchive() {
+        SharedPreferences.Editor editor = prefs.edit();
+        Set<String> datesWithData = new HashSet<>(prefs.getStringSet("DatesWithData", new HashSet<>()));
+        Set<String> modifiedDates = new HashSet<>(prefs.getStringSet("ModifiedDates", new HashSet<>()));
+
+        // Очищаем данные по датам
+        for (String date : datesWithData) {
+            String datePrefix = date + "_";
+            editor.putInt(datePrefix + "CompletedTetrominoCount", 0);
+        }
+
+        // Сохраняем обновлённые данные
+        for (TetrominoWithDate item : archivedTetrominos) {
+            String datePrefix = item.date + "_";
+            int count = prefs.getInt(datePrefix + "CompletedTetrominoCount", 0);
+            editor.putInt(datePrefix + "CompletedTetrominoPosition_" + count, item.tetromino.position);
+            editor.putInt(datePrefix + "CompletedTetrominoType_" + count, item.tetromino.typeIndex);
+            editor.putInt(datePrefix + "CompletedTetrominoRotation_" + count, item.tetromino.rotation);
+            editor.putInt(datePrefix + "CompletedTetrominoColor_" + count, item.tetromino.originalColor);
+            editor.putString(datePrefix + "CompletedTetrominoTitle_" + count, item.tetromino.title);
+            editor.putString(datePrefix + "CompletedTetrominoDescription_" + count, item.tetromino.description);
+            editor.putString(datePrefix + "CompletedTetrominoCategory_" + count, item.tetromino.category);
+            editor.putInt(datePrefix + "CompletedTetrominoDifficulty_" + count, item.tetromino.difficulty);
+            editor.putInt(datePrefix + "CompletedTetrominoTime_" + count, item.tetromino.timeToComplete);
+            editor.putInt(datePrefix + "CompletedTetrominoCount", count + 1);
+            modifiedDates.add(item.date);
+        }
+
+        // Обновляем список дат с данными
+        Set<String> updatedDatesWithData = new HashSet<>();
+        for (TetrominoWithDate item : archivedTetrominos) {
+            updatedDatesWithData.add(item.date);
+        }
+        editor.putStringSet("DatesWithData", updatedDatesWithData);
+        editor.putStringSet("ModifiedDates", modifiedDates);
+
+        editor.apply();
+        Log.d("DashboardFragment", "Archive saved, DatesWithData: " + updatedDatesWithData.toString());
     }
 
     @Override
